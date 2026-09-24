@@ -78,10 +78,83 @@ test('backup agent gate blocks Weixin runs, allows isolated summary jobs and oth
 
 test('direction synonyms and boundaries match astrophysics without matching words like metaphor', () => {
   assert.deepEqual(parseTopics('21 cm，EoR, high-redshift, 21cm'), ['21cm','EoR','high redshift']);
+  assert.deepEqual(parseTopics('21cm cosmology, 21-cm cosmology, 21cm'), ['21cm']);
   assert.deepEqual(matchingTopics(paper, config.defaultTopics), config.defaultTopics);
   assert.equal(matchingTopics({title:'metaphor research',abstract:'a priority study'}, ['EoR']).length, 0);
   assert.throws(() => parseTopics('21cm" OR all:*'), /方向/);
   assert.match(buildQuery(['21cm'], now-DAY, now), /submittedDate:\[202609240000 TO 202609250000\]/);
+});
+
+test('numbered priorities move one owned topic, append new topics, reject invalid moves and survive restart', () => {
+  const dir=mkdtempSync(join(tmpdir(),'arxiv-priority-')), file=join(dir,'state.sqlite');
+  let store=new Store(file);
+  const handle=createInboundHandler(()=>fakeService(store),config,silent);
+  const key=subscriberKey('account-a','one@im.wechat'), otherKey=subscriberKey('account-b','two@im.wechat');
+  const command=text=>handle({content:text},inbound()).text;
+  command('/arxiv subscribe EoR, 21cm cosmology, high redshift');
+  handle({content:'/arxiv subscribe JWST, EoR'},inbound('account-b','two@im.wechat'));
+  command('/arxiv lang en'); command('/arxiv pause');
+  const reply=command('/arxiv priority 1 21cm cosmology');
+  assert.match(reply,/P1：21cm\nP2：EoR\nP3：high redshift/);
+  command('/arxiv add JWST'); command('/arxiv priority 4 EoR');
+  assert.deepEqual(store.sub(key).topics,['21cm','high redshift','JWST','EoR']);
+  command('/arxiv remove high redshift'); command('/arxiv add 21cm cosmology');
+  const before=store.sub(key);
+  for(const text of ['/arxiv priority 0 EoR','/arxiv priority 4 EoR','/arxiv priority 1 protein folding','/arxiv priority 1 21cm, EoR']){
+    command(text); assert.deepEqual(store.sub(key).topics,before.topics); assert.equal(store.sub(key).revision,before.revision);
+  }
+  assert.match(command('/arxiv priority'),/P1：21cm\nP2：JWST\nP3：EoR/);
+  assert.equal(command('/arxiv priority'),command('/arxiv topics'));
+  assert.deepEqual(store.sub(otherKey).topics,['JWST','EoR']);
+  assert.equal(store.sub(key).language,'en'); assert.equal(store.sub(key).active,false);
+  store.close(); store=new Store(file);
+  assert.deepEqual(store.sub(key).topics,['21cm','JWST','EoR']);
+  store.close();rmSync(dir,{recursive:true,force:true});
+});
+
+test('now and daily deliveries use each user priority before date, deduplicate cross-matches and keep shared cache order', async () => {
+  const store=new Store(':memory:');
+  const a=add(store,'account-a','one@im.wechat',['21cm','EoR','JWST']);
+  const b=add(store,'account-b','two@im.wechat',['EoR','JWST','21cm']);
+  const fixture=(id,title,published)=>({...paper,id,title,published,abstract:'Synthetic fixture for ordering, not a real paper.',url:`https://arxiv.org/abs/${id}`});
+  store.putPapers([
+    fixture('2609.20001','21 cm cosmology and EoR',now-4*DAY),
+    fixture('2609.20003','21-cm signal B',now-DAY),
+    fixture('2609.20002','21-cm signal A',now-DAY),
+    fixture('2609.20004','EoR forecast',now-1000),
+    fixture('2609.20005','JWST galaxies',now-500),
+    fixture('2609.20006','Protein folding',now-100),
+  ],now);
+  const originalOrder=store.papers(0).map(p=>p.id), sends=[];
+  const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async p=>{sends.push(p);return{messageId:`msg${sends.length}`};}});
+  service.client={refresh:async()=>{}};service.summarizer={get:async()=>null};
+  for(const [sub,kind] of [[a,'now'],[b,'daily']]){
+    store.patchSub(sub.key,{language:'none'},now);store.enqueue(sub.key,kind,now);await service.process(store.nextRun(now));
+  }
+  const received=account=>sends.filter(p=>p.accountId===account);
+  const ids=account=>received(account).map(p=>/arXiv:(\d{4}\.\d+)v/.exec(p.text)[1]);
+  assert.deepEqual(ids('account-a'),['2609.20002','2609.20003','2609.20001','2609.20004','2609.20005']);
+  assert.deepEqual(ids('account-b'),['2609.20004','2609.20001','2609.20005','2609.20002','2609.20003']);
+  assert.deepEqual(received('account-a').map(p=>/优先级：P(\d+)/.exec(p.text)[1]),['1','1','1','2','3']);
+  assert.match(received('account-a')[2].text,/匹配方向：21cm、EoR/);
+  assert.deepEqual(store.papers(0).map(p=>p.id),originalOrder);
+  store.enqueue(a.key,'daily',now+1);await service.process(store.nextRun(now+1));assert.equal(sends.length,10);
+  store.close();
+});
+
+test('test selects the best available priority before limiting to one, skipping empty higher priorities', async () => {
+  const store=new Store(':memory:'), sub=add(store,'account-a','one@im.wechat',['protein folding','21cm','EoR']);
+  store.patchSub(sub.key,{language:'none'},now);
+  store.putPapers([
+    {...paper,title:'21cm cosmology',abstract:'Synthetic fixture.',published:now-3*DAY},
+    {...paper,id:'2609.29999',title:'EoR forecast',abstract:'Synthetic fixture.',published:now-1000},
+  ],now);
+  const sends=[];
+  const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async p=>{sends.push(p);return{messageId:'fixture'};}});
+  service.client={refresh:async()=>{}};service.summarizer={get:async()=>null};
+  store.enqueue(sub.key,'test',now);await service.process(store.nextRun(now));
+  assert.equal(sends.length,1);assert.match(sends[0].text,/优先级：P2 · 21cm/);assert.match(sends[0].text,/arXiv:2609\.12345v1/);
+  assert.equal(store.delivery(sub.key,'2609.29999'),undefined);store.close();
 });
 
 test('Atom parsing preserves English abstract text, entities, authors and version; rejects malformed feeds', () => {

@@ -57,9 +57,10 @@ export class Summarizer {
   }
 }
 
-export function formatPaper(paper, summary, language, matched, number, total) {
+export function formatPaper(paper, summary, language, matched, number, total, priority) {
   const date = new Date(paper.published).toISOString().slice(0, 10);
-  const head = `arXiv 日报 · ${number}/${total}\n${paper.title}\narXiv:${paper.id}v${paper.version} · 首次提交 ${date} UTC\n匹配方向：${matched.join('、')}`;
+  const rank = priority ? `\n优先级：P${priority} · ${matched[0]}` : '';
+  const head = `arXiv 日报 · ${number}/${total}${rank}\n${paper.title}\narXiv:${paper.id}v${paper.version} · 首次提交 ${date} UTC\n匹配方向：${matched.join('、')}`;
   const authors = paper.authors.length > 8 ? `${paper.authors.slice(0, 8).join(', ')} et al.` : paper.authors.join(', ');
   let overview = '';
   if (summary) {

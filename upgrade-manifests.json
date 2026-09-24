@@ -1,0 +1,38 @@
+{
+  "0.1.0": {
+    "package.json": "3cf10ac953cc0b3eac05e4a9f8a4f39c90f7dae074c3180e584da314f1b7d0d8",
+    "package-lock.json": "549c95c4b38476d00dd2fa2ded1e509265491b4c16286a5ae02bcfd6d032dae5",
+    "openclaw.plugin.json": "998217da738e19bd525cc56a2330ee512be8993bef376f5d4c6baff3c6d71686",
+    "README.md": "4de85c5a48aac433632613aac6151b2216382a9482152abbdeaccbe48ea90e1c",
+    "LICENSE": "0d48c51315b69d3fe5e3b71b8beca8ee145a63f353974fef3c866723512ea9ce",
+    "src/arxiv.js": "02e687a4c5973f2e6a323cbfac99f1779033fdfccbd3ecad050b4b56162dd037",
+    "src/commands.js": "0ca6f21f6d4d9a175fbd8f1413fe601868e1be910f328dbb5d12e13fe3a06e5b",
+    "src/index.js": "5423fea45c5929e496deaf1843967d0b2007470bcee6e8e96ca775bc264b6de3",
+    "src/service.js": "372cd358995f0ec8ebf3c22c2edd0fb373bf285e1a4071ca30bd8ea3631826a4",
+    "src/store.js": "a51678855b39f09f4bc691570231657368e6b43810cb8b05b2adb9a441561057",
+    "src/summary.js": "b096b77f352923f11d0001a3dbb7b7ddca077c77d3e89c4c3c33de6f8274876c",
+    "src/topics.js": "aa3e94ab5f7767a9ae4c2ddd6101b2c2557b9e5e2791628102f797535444ddaf",
+    "test/digest.test.js": "af6e39507c3fbbeca6fb29178ae24d6ba276a861d0ddce28bc10e57f51118594"
+  },
+  "0.1.1": {
+    ".gitattributes": "93699a1108fd9da226b06f84ee12e317f4ea4d2f18a8fd05260443fd1bf2faef",
+    ".gitignore": "afbb422c72c18c5af81a1c8eeec12c9ada532c88a7df90e20a77505ab7864fe9",
+    "CONTRIBUTING.md": "f9934f2cc809e1a9e189fc1d0b715968cdbab139a6ef608cc8424941f8298335",
+    "LICENSE": "a5905566c9667e850d1e331590bcf188c6c3dd988b0ee8a5c11928ebc412e80b",
+    "README.md": "d73394c8301199d0cb54e6a121025a337aa027d7898c972bfc4d75a85903947d",
+    "config.example.json": "ec2e2b9e87f7d9702eff5e8033cc0fa513b4510c64964557cff220d5d38a9220",
+    "installer-template.cjs": "cc628539e254a670a8a6d4d71f015b04ed10cb5c40f5bae92239482fdf41eb72",
+    "openclaw.plugin.json": "2ffac13cfe9700358c92a2e65c7d3912660ea226ba58211f984a64c02d4518d8",
+    "package-lock.json": "01c7870a35943e2dba71d69fcb15434fd4337cc574344e7d81a9becd8ce6a4ae",
+    "package.json": "0d72eb5390624852d2f56d4ff787bcbe45722e2e2174a3ccd0f1ecf95c2ad669",
+    "scripts/build-installer.mjs": "6b7eab75bd900b806973fa42f2ffb642442eca351782dd6e5977698db3b3380c",
+    "src/arxiv.js": "4b00c673104e6e4b78042a188379939ae70bef4f6d7b180de80a937566277d55",
+    "src/commands.js": "0ca6f21f6d4d9a175fbd8f1413fe601868e1be910f328dbb5d12e13fe3a06e5b",
+    "src/index.js": "5423fea45c5929e496deaf1843967d0b2007470bcee6e8e96ca775bc264b6de3",
+    "src/service.js": "372cd358995f0ec8ebf3c22c2edd0fb373bf285e1a4071ca30bd8ea3631826a4",
+    "src/store.js": "a51678855b39f09f4bc691570231657368e6b43810cb8b05b2adb9a441561057",
+    "src/summary.js": "b096b77f352923f11d0001a3dbb7b7ddca077c77d3e89c4c3c33de6f8274876c",
+    "src/topics.js": "aa3e94ab5f7767a9ae4c2ddd6101b2c2557b9e5e2791628102f797535444ddaf",
+    "test/digest.test.js": "af6e39507c3fbbeca6fb29178ae24d6ba276a861d0ddce28bc10e57f51118594"
+  }
+}

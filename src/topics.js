@@ -1,5 +1,5 @@
 const groups = [
-  { name: '21cm', aliases: ['21cm', '21 cm', '21-cm', '21 centimeter', '21 centimetre', '21 centimeter line', '21 centimetre line'], search: ['21cm', '21 cm', '21-cm', '21 centimeter', '21 centimetre'] },
+  { name: '21cm', aliases: ['21cm', '21 cm', '21-cm', '21 centimeter', '21 centimetre', '21 centimeter line', '21 centimetre line', '21cm cosmology', '21 cm cosmology', '21-cm cosmology'], search: ['21cm', '21 cm', '21-cm', '21 centimeter', '21 centimetre'] },
   { name: 'EoR', aliases: ['eor', 'epoch of reionization', 'epoch of reionisation', 'reionization', 'reionisation'], search: ['EoR', 'reionization', 'reionisation'] },
   { name: 'high redshift', aliases: ['high redshift', 'high-redshift', 'high z', 'high-z', 'highredshift'], search: ['high redshift', 'high-redshift', 'high z', 'high-z'] },
 ];
@@ -41,6 +41,17 @@ export function matchesTopic(paper, topic) {
 }
 
 export function matchingTopics(paper, topics) { return topics.filter(t => matchesTopic(paper, t)); }
+
+// Ranking belongs to each subscriber, never to the shared paper/query cache.
+// A paper matching several topics appears once, at its best (lowest) rank.
+export function rankPapers(papers, topics) {
+  return papers.map(paper => {
+    const matched = matchingTopics(paper, topics);
+    return {paper, matched, priority: topics.indexOf(matched[0]) + 1};
+  }).filter(item => item.priority > 0).sort((a, b) =>
+    a.priority - b.priority || b.paper.published - a.paper.published ||
+    (a.paper.id < b.paper.id ? -1 : a.paper.id > b.paper.id ? 1 : 0));
+}
 
 export function buildQuery(topics, since, until) {
   const terms = [...new Set(topics.flatMap(searchTerms))];

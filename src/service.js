@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { Store } from './store.js';
 import { ArxivClient, DAY } from './arxiv.js';
 import { Summarizer, formatPaper, chunkText } from './summary.js';
-import { matchingTopics, parseTopics } from './topics.js';
+import { matchingTopics, parseTopics, rankPapers } from './topics.js';
 
 export function resolveConfig(input = {}) {
   const c = {
@@ -138,8 +138,8 @@ export class DigestService {
         finish('done'); return;
       }
       await this.client.refresh(sub.topics, signal);
-      let papers = this.store.papers(this.clock() - this.config.lookbackDays * DAY)
-        .filter(p => matchingTopics(p, sub.topics).length && !this.store.delivery(sub.key, p.id));
+      let papers = rankPapers(this.store.papers(this.clock() - this.config.lookbackDays * DAY)
+        .filter(p => !this.store.delivery(sub.key, p.id)), sub.topics);
       const outstanding = this.store.unsubmitted(sub.key);
       const pending = outstanding.filter(d => d.status === 'pending');
       if (job.kind === 'test') papers = papers.slice(0, Math.max(0, 1 - pending.length));
@@ -158,12 +158,12 @@ export class DigestService {
         signal.throwIfAborted();
         let current = this.store.sub(sub.key);
         if (!this.allowed(current) || current.revision !== sub.revision) { finish('cancelled', '订阅已变化，未继续发送。'); return; }
-        const paper = papers[i];
+        const {paper, matched, priority} = papers[i];
         const summary = await this.summarizer.get(paper, sub.language, signal);
         current = this.store.sub(sub.key);
         if (!this.allowed(current) || current.revision !== sub.revision) { finish('cancelled', '订阅已变化，未继续发送。'); return; }
         this.store.prepareDelivery(sub.key, paper.id, sub.language,
-          chunkText(formatPaper(paper, summary, sub.language, matchingTopics(paper, sub.topics), i + 1 + resumable.length, total)), this.clock());
+          chunkText(formatPaper(paper, summary, sub.language, matched, i + 1 + resumable.length, total, priority)), this.clock());
         physicalSend = true;
         if (await this.sendDelivery(sub.key, paper.id, sub.revision)) sent++;
         else { finish('cancelled', '订阅已变化，未继续发送。'); return; }

@@ -1,14 +1,15 @@
 # OpenClaw arXiv Daily
 
-通过微信指令订阅研究方向，每天接收 arXiv 新论文的英文 abstract、可选中英文概括和链接。支持独立的多人订阅，默认北京时间 **08:00** 开始处理。
+通过微信指令订阅研究方向，每天接收 arXiv 新论文的英文 abstract、可选中英文概括和链接。按天文、物理、化学、计算机、生物五类提供订阅示例；支持个人关键词优先级，默认北京时间 **08:00** 开始处理。
 
-A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with per-user topics and optional Chinese or English summaries.
+A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with per-user keyword priorities and optional Chinese or English summaries.
 
-**实验版本 0.1.1**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 18 项离线行为测试，并验证真实 arXiv API 的读取和解析；**尚未完成 Windows Gateway 加载、真实模型认证及微信收件的端到端验证**。
+**实验版本 0.2.0**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 23 项离线行为测试，并验证真实 arXiv API 的读取和解析；**尚未完成 Windows Gateway 加载、真实模型认证及微信收件的端到端验证**。
 
 ## 能做什么
 
-- 每人独立设置方向、概括语言、暂停状态；最多 50 个订阅条目。
+- 每人独立设置方向、**P1、P2、P3…关键词优先级**、概括语言和暂停状态；最多 50 个订阅条目。
+- 新匹配论文先按个人优先级排列，同一优先级按首次提交日期从新到旧；多关键词命中只发一次。
 - 每篇保留英文原始 abstract，附 arXiv 页面和 PDF 链接。
 - 可选约 200 字中文或约 200 词英文概括，包含研究空白、工作、方法、结论；也可关闭概括。
 - 概括只依据 abstract，不声称阅读全文；同一论文的同语言概括共用缓存。
@@ -17,18 +18,19 @@ A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with per-user topi
 - 使用已有 OpenClaw agent 的模型与认证，不需要在本插件中填写额外 API key。
 - SQLite 保存订阅、任务与发送状态；后台调度使用插件服务。
 
-## 支持哪些学科？
+## 五类学科
 
-**方向没有天文学限制，但目前数据源只有 arXiv。** 换关键词不会自动接入其他论文库。
+示例按 **天文、物理、化学、计算机、生物** 五类组织。每个人填写自己关心的英文关键词，可以跨学科订阅；当前没有必须先选择学科的独立指令，也不会自动把学科名称展开为全部子方向。
 
-| 方向 | 本版本覆盖情况 |
-| --- | --- |
-| 天文、物理、数学、统计 | 可订阅 arXiv 上相关论文 |
-| 计算机、机器学习、计算机视觉 | 可订阅 arXiv 上相关论文 |
-| 医学影像、医学 AI、医学物理 | 可订阅发表在 arXiv 上的相关论文 |
-| 临床医学、药物试验等完整医学文献跟踪 | 仅靠 arXiv 不足，需要增加 PubMed 等数据源 |
+| 学科 | 关键词示例 | 当前数据范围 |
+| --- | --- | --- |
+| 天文 | `21cm cosmology`、`EoR`、`high redshift`、`JWST` | arXiv 上的天体物理、宇宙学等相关论文 |
+| 物理 | `quantum entanglement`、`superconductivity`、`magnetic reconnection` | arXiv 上的量子、凝聚态、等离子体等相关论文 |
+| 化学 | `quantum chemistry`、`molecular dynamics`、`catalysis` | arXiv 收录的化学物理、计算化学等相关论文 |
+| 计算机 | `retrieval augmented generation`、`federated learning`、`computer vision` | arXiv 上的计算机科学和机器学习等相关论文 |
+| 生物 | `protein folding`、`gene regulation`、`population dynamics` | arXiv 收录的定量生物学、生物物理等相关论文 |
 
-**PubMed、medRxiv、bioRxiv 尚未接入。** 例如订阅 `lung cancer` 只会匹配 arXiv 上相关内容，不代表覆盖肺癌领域的新研究。范围可参见 [arXiv 学科分类](https://arxiv.org/category_taxonomy) 和 [PubMed 简介](https://pubmed.ncbi.nlm.nih.gov/about/)。
+**当前数据源只有 arXiv。** 化学和生物示例不代表覆盖这两个学科的全部文献；ChemRxiv、bioRxiv、medRxiv、PubMed 均尚未接入。arXiv 的具体覆盖范围见其[学科分类说明](https://arxiv.org/category_taxonomy)。
 
 ## 安装前准备
 
@@ -59,13 +61,36 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --account "YOUR_FIRST_
 
 公开安装包不包含任何个人账号 ID。安装器会展开可读源码、安装锁定依赖、运行测试、备份配置，然后通过 OpenClaw 的正常插件安装与启用流程完成配置。过程中会停止并重新启动 Gateway。OpenClaw 可能要求审阅本地插件来源或能力；按其正常提示处理，安装器不绕过授权检查。
 
-默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.1.1`。如只想先展开检查源码：
+默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.2.0`。如只想先展开检查源码：
 
 ```powershell
 node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 ```
 
 可以加 `--dir "目标目录"`。安装器不会覆盖手工修改过的源码，也不会自动替换其他目录注册的同名插件。已有安装产生冲突时，先核对插件路径并保留修改，不要删除订阅数据库来解决路径问题。原有 cron 维护任务保留。
+
+## 已有安装：在 PowerShell 更新到 0.2.0
+
+已装过本项目 0.1.0 试用版或 0.1.1 公开版时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
+
+```powershell
+$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.2.0.cjs"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ChangqIngovo/openclaw-arxiv-daily/main/install-arxiv-daily.cjs" -OutFile $ArxivInstaller
+node $ArxivInstaller --upgrade
+```
+
+更新器从 OpenClaw 查询实际加载目录，核对已有源码、备份配置与将替换的文件，停止 Gateway，再原地更新、运行测试并启动 Gateway。它保留现有账号、agent、订阅方向、概括语言、暂停状态和发送记录；原有方向顺序直接作为 P1、P2、P3…，不重置数据库。
+
+如果源码有手工修改，更新器会停止并指出文件，不覆盖这些修改。更新中途失败时，先处理错误；若 Gateway 已停止，安装器会明确提示。备份位置会打印在 PowerShell 中。`--upgrade` 不自动安装缺失插件；第一次安装请用上面的 `--account` 命令。
+
+更新后检查：
+
+```powershell
+openclaw plugins inspect arxiv-daily --runtime --json
+openclaw gateway status
+```
+
+检查插件运行时信息是否加载成功，然后在微信里发送 `/arxiv topics` 和新的 `/arxiv priority` 指令。现有安装目录可能仍包含旧版本号，这是原地更新的正常结果，以目录内 `package.json` 的版本和实际命令行为为准。
 
 ## 第一次订阅
 
@@ -74,7 +99,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 先订阅：
 
 ```text
-/arxiv subscribe 21cm, EoR, high redshift
+/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST
 ```
 
 再试发一篇：
@@ -85,7 +110,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 
 每人都要自己发送订阅指令。扫描登录二维码不等于创建日报订阅。
 
-`test` 从最近 7 天内匹配方向、尚未向本人发过的论文中选 1 篇，该篇计入已发送记录。首次可能需要几分钟；没有匹配论文时结果为 0，不会编造论文。用 `/arxiv status` 查看进度，以手机实际收件为准。
+`test` 从最近 7 天内匹配方向、尚未向本人发过的论文中，按优先级和日期选 1 篇，该篇计入已发送记录。首次可能需要几分钟；没有匹配论文时结果为 0，不会编造论文。用 `/arxiv status` 查看进度，以手机实际收件为准。
 
 ## 微信命令速查
 
@@ -94,15 +119,18 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 | 微信指令 | 作用 |
 | --- | --- |
 | `/arxiv help` | 查看帮助 |
-| `/arxiv subscribe 21cm, EoR, high redshift` | 创建订阅，或**替换全部方向** |
+| `/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST` | 按输入顺序创建订阅，或**替换全部方向及其优先级** |
+| `/arxiv priority 1 21cm cosmology` | 把已有的 21cm 方向移到第 1 位，其余方向顺移 |
+| `/arxiv priority 2 JWST` | 把已有的 JWST 方向移到第 2 位，其余方向顺移 |
+| `/arxiv priority` | 查看当前优先级 |
 | `/arxiv subscribe` | 使用管理员配置的默认方向订阅 |
-| `/arxiv add JWST, cosmic dawn` | **追加方向**，保留已有方向 |
+| `/arxiv add JWST, cosmic dawn` | 在**优先级末尾追加方向**，保留已有顺序 |
 | `/arxiv remove high redshift` | 删除指定方向；不能删除最后一个方向 |
-| `/arxiv topics` | 查看当前方向 |
+| `/arxiv topics` | 查看当前方向和 P1、P2、P3…顺序 |
 | `/arxiv lang zh` | 约 200 字中文概括 |
 | `/arxiv lang en` | 约 200 词英文概括 |
 | `/arxiv lang none` | 只发送英文 abstract 和链接，不生成概括 |
-| `/arxiv test` | 试发 1 篇未发送的近期论文 |
+| `/arxiv test` | 按优先级试发 1 篇未发送的近期论文 |
 | `/arxiv now` | 立即处理本人尚未发送的近期论文 |
 | `/arxiv status` | 查看订阅、最近任务及投递状态 |
 | `/arxiv pause` | 暂停本人订阅 |
@@ -113,22 +141,51 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 
 `test`、`now`、`retry` 的手动请求至少间隔 1 分钟。暂停、退订或修改方向不能撤回已经提交给微信的消息。退订后重新订阅可能再次收到最近一周的论文。
 
-### 不同学科的订阅示例
+### 关键词优先级怎么设置
 
-下列每行都是一种独立用法；连续执行多条 `subscribe` 会替换前一次方向。要增加方向，请用 `add`。
+订阅时，逗号左侧的关键词优先级更高。例如：
 
-| 需求 | 微信指令 |
+```text
+/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST
+```
+
+| 优先级 | 方向 |
 | --- | --- |
-| 21cm / 再电离 / 高红移 | `/arxiv subscribe 21cm, EoR, high redshift` |
-| 检索增强生成 / 联邦学习 | `/arxiv subscribe retrieval augmented generation, federated learning` |
-| 计算机视觉 | `/arxiv subscribe image segmentation, object detection` |
-| 医学影像 | `/arxiv subscribe medical image segmentation, magnetic resonance imaging` |
-| 肺癌 / 肿瘤分割（仅 arXiv） | `/arxiv subscribe lung cancer, tumor segmentation` |
+| P1（最高） | 21cm cosmology（归一化显示为 `21cm`） |
+| P2 | EoR |
+| P3 | high redshift |
+| P4 | JWST |
+
+`21cm cosmology` 是内置 `21cm` 方向的别名，会匹配 `21cm`、`21 cm`、`21-cm` 等写法，不要求 abstract 恰好出现完整的 “21cm cosmology” 短语。`cosmology` 单独列为另一个关键词则是独立、更宽泛的方向。
+
+日报先列所有新的 P1 论文，再列 P2、P3、P4；同一级内部按首次提交日期从新到旧，日期相同按 arXiv 编号排序。若当天 P1 没有匹配结果，直接从有结果的下一优先级开始；较低优先级论文仍然会推送。同一篇同时匹配 P1 和 P3，只在 P1 位置发一次，并列出全部命中方向。
+
+日后无需重新订阅，只移动一个已有方向即可。例如让 JWST 排第二：
+
+```text
+/arxiv priority 2 JWST
+```
+
+结果为 `P1: 21cm → P2: JWST → P3: EoR → P4: high redshift`。序号必须在当前方向数量范围内，未知方向先用 `/arxiv add` 添加。`add` 放在末尾，`remove` 删除后自动压紧编号；重复添加已有方向不会改变它的位置。
+
+每人的排序独立，不改变其他人的优先级。改变顺序不会把已发送的论文再发一遍。优先级决定**新匹配论文的展示及发送顺序**，不代表 arXiv 返回相关性分数；底层查询仍批量执行并共享缓存。已生成但尚未发完的消息先续传，手动重试沿用原消息内容，优先级调整不会重写已提交的消息。
+
+### 五类学科的订阅命令
+
+下面每行是一位用户的独立示例，关键词从左到右为 P1、P2、P3…。连续发送多条 `subscribe` 会替换前一次设置。
+
+| 学科 | 微信指令 |
+| --- | --- |
+| 天文 | `/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST` |
+| 物理 | `/arxiv subscribe quantum entanglement, superconductivity, magnetic reconnection` |
+| 化学 | `/arxiv subscribe quantum chemistry, molecular dynamics, catalysis` |
+| 计算机 | `/arxiv subscribe retrieval augmented generation, federated learning, computer vision` |
+| 生物 | `/arxiv subscribe protein folding, gene regulation, population dynamics` |
 
 ### 关键词如何匹配
 
 - 多个方向用中英文逗号分隔；每人 1–12 个方向，每个最多 70 个字符。
-- 方向之间是“或”，匹配论文标题和 abstract；不是语义检索或整个学科的完整订阅。
+- 方向之间是“或”，命中后按最高优先级归类，匹配论文标题和 abstract；不是语义检索或整个学科的完整订阅。
 - 推荐使用具体的英文研究术语。不自动把中文方向翻译为英文。
 - 内置三组天文同义写法：`21cm/21 cm/21-cm`、`EoR/reionization/reionisation`、`high redshift/high-redshift/high-z` 等。
 - 其他缩写、同义词、单复数目前不自动扩展；有需要时分别添加。
@@ -137,7 +194,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 
 ## 一篇日报包含什么
 
-1. 论文标题、作者、arXiv 编号、首次提交日期和匹配方向。
+1. 最高匹配优先级（如 `P1 · 21cm`）、论文标题、作者、arXiv 编号、首次提交日期和全部匹配方向。
 2. 原始英文 abstract。
 3. 可选概括：**研究空白 / 做了什么 / 怎么做的 / 结论**。
 4. 论文页面和 PDF 链接。
@@ -194,7 +251,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --add-account "YOUR_NE
 
 1. 两人订阅不同方向，分别查看 `/arxiv topics`，确认互不影响。
 2. 分别设置 `zh` 和 `en` 并试发，核对手机上的完整 abstract、概括、链接及实际收件人。无匹配论文时用状态确认 0 篇。
-3. 普通“你好”应无 AI 回复；`/arxiv help` 应正常回复。
+3. 分别设置不同优先级，检查收到的论文是否先 P1 再 P2，同级由新到旧；普通“你好”应无 AI 回复，`/arxiv help` 应正常回复。
 4. 重启 Gateway，再执行 `now`，检查设置保留且已提交论文不重复。
 5. 两人至少连续 48 小时不发新指令，观察有匹配新论文时是否仍能自动收到日报。
 
@@ -213,7 +270,7 @@ npm run build:installer
 npm run check:installer
 ```
 
-18 项离线测试覆盖多用户隔离、普通聊天拦截、SQLite 持久化、北京时间调度、概括缓存、分页、去重、不确定发送及退订等行为。它们不会调用真实模型或向微信发消息。
+23 项离线测试覆盖个人优先级排序与持久化、试发选择、多用户隔离、普通聊天拦截、北京时间调度、概括缓存、分页、去重、不确定发送、退订，以及更新前的源码检查等行为。它们不会调用真实模型或向微信发消息。
 
 安装包由明确列出的源码文件构建，包含 SHA-256 校验；`check:installer` 检查安装包与当前源码是否一致。修改源码或 README 后请重新构建。安装流程目前只适配 Windows，未验证 Linux/macOS 部署；OpenClaw 插件接口为实验接口，暂时保持目标版本。
 
