@@ -1,0 +1,37 @@
+{
+  "name": "openclaw-arxiv-daily",
+  "version": "0.1.1",
+  "description": "Deterministic per-user arXiv subscriptions for OpenClaw Weixin",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.js"
+    ]
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build:installer": "node scripts/build-installer.mjs",
+    "check:installer": "node scripts/build-installer.mjs --check"
+  },
+  "dependencies": {
+    "fast-xml-parser": "5.11.1"
+  },
+  "peerDependencies": {
+    "openclaw": "2026.9.6"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChangqIngovo/openclaw-arxiv-daily.git"
+  },
+  "homepage": "https://github.com/ChangqIngovo/openclaw-arxiv-daily"
+}
