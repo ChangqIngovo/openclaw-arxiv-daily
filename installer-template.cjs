@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Windows installer for arxiv-daily 0.3.1, OpenClaw 2026.9.6.
+// Windows installer for arxiv-daily 0.3.2, OpenClaw 2026.9.6.
 // No shell eval, policy bypass, API-key copying, or outbound test messages.
 // --prepare-only extracts the readable source without changing OpenClaw.
 const fs = require('node:fs');
@@ -16,7 +16,7 @@ const option = name => {const at=args.indexOf(name);return at<0?undefined:args[a
 const options = name => args.flatMap((arg, i) => arg === name ? [args[i + 1]] : []);
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const stateDir = path.resolve(process.env.OPENCLAW_STATE_DIR || path.join(os.homedir(), '.openclaw'));
-let target = path.resolve(option('--dir') || path.join(stateDir, 'local-plugins', 'arxiv-daily-0.3.1'));
+let target = path.resolve(option('--dir') || path.join(stateDir, 'local-plugins', 'arxiv-daily-0.3.2'));
 const prepareOnly = args.includes('--prepare-only');
 const upgrading = args.includes('--upgrade');
 const accountToAdd = option('--add-account');
@@ -39,7 +39,7 @@ function checkUpgrade(directory) {
   const previous = JSON.parse(Buffer.from(PAYLOAD.find(p=>p.name==='upgrade-manifests.json').data,'base64').toString('utf8'));
   const next = JSON.parse(Buffer.from(PAYLOAD.find(p=>p.name==='package.json').data,'base64').toString('utf8'));
   const knownPackage=pkg.name==='openclaw-arxiv-daily'||(pkg.version==='0.1.0'&&pkg.name==='arxiv-daily-local');
-  if(!knownPackage||manifest.id!=='arxiv-daily'||(!previous[pkg.version]&&pkg.version!==next.version))fail('Only a supported arxiv-daily installation (0.1.0, 0.1.1, 0.2.0, 0.3.0, or this version) can be upgraded automatically. No files changed.');
+  if(!knownPackage||manifest.id!=='arxiv-daily'||(!previous[pkg.version]&&pkg.version!==next.version))fail('Only a supported arxiv-daily installation (0.1.0, 0.1.1, 0.2.0, 0.3.0, 0.3.1, or this version) can be upgraded automatically. No files changed.');
   for(const item of PAYLOAD){
     const file=path.join(directory,item.name);
     if(!fs.existsSync(file))continue;

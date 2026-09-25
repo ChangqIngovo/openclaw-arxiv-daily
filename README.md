@@ -4,7 +4,7 @@
 
 A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with previous-day filtering, per-user keyword priorities, and Chinese or English summaries grounded in the paper body.
 
-**实验版本 0.3.1**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 39 项离线行为测试，并验证真实 arXiv API 读取，以及一篇 21-cm 论文的 HTML 和 15 页 PDF 正文提取；**尚未完成 Windows Gateway 加载、真实模型认证及微信收件的端到端验证**。
+**实验版本 0.3.2**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 39 项离线行为测试，并验证真实 arXiv API 读取，以及一篇 21-cm 论文的 HTML 和 15 页 PDF 正文提取。0.3.1 已在一套 Windows 环境完成 Gateway 加载、真实模型调用及微信正文概括收件的手动试发；**定时推送及 50 人持续运行尚待验证**。
 
 ## 能做什么
 
@@ -12,6 +12,7 @@ A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with previous-day 
 - 新匹配论文先按个人优先级排列，同一优先级按首次提交日期从新到旧；多关键词命中只发一次。
 - 每篇保留英文原始 abstract，附 arXiv 页面和 PDF 链接。
 - 可选约 200 字中文或约 200 词英文概括，包含研究空白、工作、方法、结论；也可关闭概括。
+- 消息标题使用 `Abstract`、中文 `概括`、英文 `summary`，省去标题中的括号说明。
 - 优先读取 arXiv HTML 正文，失败再逐页提取 PDF；长论文分段阅读、汇总后概括。正文与同语言概括共用缓存。
 - 每次只筛选前一个自然日，默认按北京时间；首次订阅、试发、重试也不扩大日期范围。
 - 按每人已发送的 arXiv 基础编号去重，不因 v2/v3 更新重复推送。
@@ -62,7 +63,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --account "YOUR_FIRST_
 
 公开安装包不包含任何个人账号 ID。安装器会展开可读源码、安装锁定依赖、运行测试、备份配置，然后通过 OpenClaw 的正常插件安装与启用流程完成配置。过程中会停止并重新启动 Gateway。OpenClaw 可能要求审阅本地插件来源或能力；按其正常提示处理，安装器不绕过授权检查。
 
-默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.3.1`。如只想先展开检查源码：
+默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.3.2`。如只想先展开检查源码：
 
 ```powershell
 node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
@@ -70,13 +71,13 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 
 可以加 `--dir "目标目录"`。安装器不会覆盖手工修改过的源码，也不会自动替换其他目录注册的同名插件。已有安装产生冲突时，先核对插件路径并保留修改，不要删除订阅数据库来解决路径问题。原有 cron 维护任务保留。
 
-## 已有安装：在 PowerShell 更新到 0.3.1
+## 已有安装：在 PowerShell 更新到 0.3.2
 
-已装过本项目 0.1.0、0.1.1、0.2.0 或 0.3.0 时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
+已装过本项目 0.1.0、0.1.1、0.2.0、0.3.0 或 0.3.1 时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
 
 ```powershell
-$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.3.1.cjs"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ChangqIngovo/openclaw-arxiv-daily/main/install-arxiv-daily.cjs" -OutFile $ArxivInstaller
+$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.3.2.cjs"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ChangqIngovo/openclaw-arxiv-daily/main/install-arxiv-daily.cjs" -OutFile $ArxivInstaller -ErrorAction Stop
 node $ArxivInstaller --upgrade
 ```
 
@@ -88,7 +89,7 @@ node $ArxivInstaller --upgrade
 
 0.3.0 在 Windows 上把 PDF.js 的字体和 CMap 目录写成了以反斜杠结尾的路径；PDF.js 要求这些目录以 `/` 结尾，因此 PDF 解析会在初始化时失败。0.3.1 将资源路径统一为正斜杠，仍由 Node 从本地读取，并在本地测试错误中保留原始解析异常。
 
-如果上一轮输出 `PDF 无法完整提取文本`、`Cannot read properties of undefined (reading 'format')`，随后提示 Gateway 已停止，直接下载上面的 **0.3.1 安装器并重跑 `--upgrade`**。已展开的 0.3.0 源码及新旧版本混合的中断状态均可核对后继续升级；原来的配置、订阅和发送记录保留。无需删除 `arxiv-daily-0.1.0` 等旧名称目录，程序会从实际注册位置原地更新。
+如果上一轮输出 `PDF 无法完整提取文本`、`Cannot read properties of undefined (reading 'format')`，随后提示 Gateway 已停止，直接下载上面的 **0.3.2 安装器并重跑 `--upgrade`**。已展开的 0.3.0 源码及新旧版本混合的中断状态均可核对后继续升级；原来的配置、订阅和发送记录保留。无需删除 `arxiv-daily-0.1.0` 等旧名称目录，程序会从实际注册位置原地更新。
 
 安装器会在测试通过后继续配置和启动 Gateway。仍未通过时会保留具体原因，不跳过测试。回归测试在当前执行环境中重现 Windows 盘符及 UNC 路径，调用真实 PDF.js 验证初始化，并检查本地资源可读；这不等于已经验证所有 Windows 运行环境。
 

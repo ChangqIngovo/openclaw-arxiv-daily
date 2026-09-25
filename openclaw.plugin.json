@@ -1,7 +1,7 @@
 {
   "id": "arxiv-daily",
   "name": "arXiv Daily",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Weixin subscription commands, shared arXiv cache, and daily delivery. Ordinary Weixin messages never start an agent turn while this plugin is active.",
   "categories": [
     "research"

@@ -232,7 +232,7 @@ test('two users get their own account/recipient; cached summary is reused; rerun
   for(const sub of [a,b]) {store.enqueue(sub.key,'now',now);await service.process(store.nextRun());}
   assert.equal(completions,1);assert.equal(sends.length,2);
   assert.deepEqual(sends.map(x=>[x.accountId,x.to]),[['account-a','one@im.wechat'],['account-b','two@im.wechat']]);
-  assert.ok(sends.every(s=>s.text.includes(paper.abstract)&&s.text.includes('依据正文文本')));
+  assert.ok(sends.every(s=>s.text.includes(paper.abstract)&&s.text.includes('\n概括\n')));
   store.putPapers([{...paper,version:2}],now);
   store.enqueue(a.key,'now',now+1);await service.process(store.nextRun());assert.equal(sends.length,2);
   store.close();
@@ -266,7 +266,7 @@ test('a network timeout is unknown, not a safe retry; original abstract-only opt
   await assert.rejects(service.sendDelivery(sub.key,paper.id,sub.revision));
   assert.equal(store.delivery(sub.key,paper.id).status,'unknown');assert.equal(store.retry(sub.key,false,now,window),0);
   const formatted=formatPaper(paper,null,'none',['21cm'],1,1);
-  assert.ok(formatted.includes(paper.abstract));assert.ok(!formatted.includes('中文概括'));store.close();
+  assert.ok(formatted.includes(paper.abstract));assert.ok(!formatted.includes('\n概括\n'));store.close();
 });
 
 test('read-only failures back off twice without sending; scheduled retry cannot spin in the queue', async () => {

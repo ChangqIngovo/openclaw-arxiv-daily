@@ -61,7 +61,7 @@ export class ArxivClient {
         const url = new URL('https://export.arxiv.org/api/query');
         url.search = new URLSearchParams({ search_query: query, start: String(start), max_results: '100', sortBy: 'submittedDate', sortOrder: 'descending' }).toString();
         const requestSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(45_000)]) : AbortSignal.timeout(45_000);
-        const response = await this.fetchImpl(url, { signal: requestSignal, headers: { Accept: 'application/atom+xml', 'User-Agent': 'openclaw-arxiv-daily/0.3.1 (OpenClaw literature digest)' } });
+        const response = await this.fetchImpl(url, { signal: requestSignal, headers: { Accept: 'application/atom+xml', 'User-Agent': 'openclaw-arxiv-daily/0.3.2 (OpenClaw literature digest)' } });
         if (!response.ok) throw new Error(`arXiv HTTP ${response.status}，稍后用 /arxiv now 重试。`);
         const declared = Number(response.headers?.get('content-length') ?? 0);
         if (declared > 8_000_000) throw new Error('arXiv 响应过大。');

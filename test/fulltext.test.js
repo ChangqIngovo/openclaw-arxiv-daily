@@ -131,7 +131,7 @@ test('summary receives full body evidence, ignores old abstract cache and bypass
   assert.equal(await summarizer.get(paper,'none'),null);assert.equal(reads,0);
   const result=await summarizer.get(paper,'zh');await summarizer.get(paper,'zh');
   assert.equal(completions,1);assert.equal(result.status,'ready');assert.equal(result.source.segments,1);
-  assert.match(formatPaper(paper,result,'zh',['fixture'],1,1),/依据正文文本；未核验图像/);
+  assert.match(formatPaper(paper,result,'zh',['fixture'],1,1),/\n概括\n/);
   summarizer.reader={get:async()=>goodBody(extractHtml(html).text+' changed body')};
   await summarizer.get(paper,'zh');assert.equal(completions,2);store.close();
 });

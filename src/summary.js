@@ -124,14 +124,14 @@ export function formatPaper(paper, summary, language, matched, number, total, pr
   let overview = '';
   if (summary?.status === 'ready') {
     const labels = language === 'zh' ? ['研究空白', '做了什么', '怎么做的', '结论'] : ['Gap', 'Work', 'Method', 'Conclusion'];
-    overview = '\n\n' + (language === 'zh' ? '中文概括（依据正文文本；未核验图像）' : 'English summary (paper body text; images not inspected)') + '\n' +
+    overview = '\n\n' + (language === 'zh' ? '概括' : 'summary') + '\n' +
       FIELDS.map((k, i) => `${labels[i]}：${summary[k]}`).join('\n') +
       `\n正文来源：${summary.source.format}${summary.source.pages ? ` · ${summary.source.pages} 页` : ''} · ${summary.source.segments} 段\n${summary.source.url}`;
   } else if (summary?.status === 'unavailable') {
     overview = language === 'en' ? '\n\nSummary not generated: the paper body could not be fully extracted. The original abstract and paper links are included.'
       : `\n\n未生成正文概括：${summary.reason || '正文未能完整读取'}。保留英文原始 abstract 和链接。`;
   }
-  return `${head}\n作者：${authors}\n\nAbstract (original English)\n${paper.abstract}${overview}\n\n论文：https://arxiv.org/abs/${paper.id}v${paper.version}\nPDF：https://arxiv.org/pdf/${paper.id}v${paper.version}`;
+  return `${head}\n作者：${authors}\n\nAbstract\n${paper.abstract}${overview}\n\n论文：https://arxiv.org/abs/${paper.id}v${paper.version}\nPDF：https://arxiv.org/pdf/${paper.id}v${paper.version}`;
 }
 
 export function chunkText(text, limit = 3500) {
