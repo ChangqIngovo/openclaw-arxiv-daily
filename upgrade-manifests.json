@@ -34,5 +34,28 @@
     "src/summary.js": "b096b77f352923f11d0001a3dbb7b7ddca077c77d3e89c4c3c33de6f8274876c",
     "src/topics.js": "aa3e94ab5f7767a9ae4c2ddd6101b2c2557b9e5e2791628102f797535444ddaf",
     "test/digest.test.js": "af6e39507c3fbbeca6fb29178ae24d6ba276a861d0ddce28bc10e57f51118594"
+  },
+  "0.2.0": {
+    ".gitattributes": "93699a1108fd9da226b06f84ee12e317f4ea4d2f18a8fd05260443fd1bf2faef",
+    ".gitignore": "afbb422c72c18c5af81a1c8eeec12c9ada532c88a7df90e20a77505ab7864fe9",
+    "CONTRIBUTING.md": "f085628845449b642d1cb88e29d4558bea05b96c1c047034211d7738889c6cd4",
+    "LICENSE": "a5905566c9667e850d1e331590bcf188c6c3dd988b0ee8a5c11928ebc412e80b",
+    "README.md": "0a64e7b30a0a983db29976b930073d8e2c09d7a47790c866301ce54214299c6b",
+    "config.example.json": "ec2e2b9e87f7d9702eff5e8033cc0fa513b4510c64964557cff220d5d38a9220",
+    "installer-template.cjs": "b8a11310ddfd608ef9e94c039001ede7d856acac23705a08f202b3a4a189c2e0",
+    "openclaw.plugin.json": "c960286572c5af0c4fad79587b4f3bc1a2ef397aeb489f303146df6ac6a27e82",
+    "package-lock.json": "efcbdff799fd1ce5273331b2a71f2b11f1dceecdd9c2c9b126696682cce27649",
+    "package.json": "8eaa80e980dd90473cd4538a520bec8a153d53b98a69c8d5a7009ac110fe68e5",
+    "scripts/build-installer.mjs": "7ecbf4fd042abca3d986c53451aeea3a065d73e6a1c37ee29191a0a2ae811fe4",
+    "src/arxiv.js": "f26fb2a576264fed3ab401f492b1088ea6c5fc1f39e7b5c4d0da41ff36609422",
+    "src/commands.js": "d22554241992ba8a66ef755b627c2ad77f66d5a3ceeded72cc806cff86d513f5",
+    "src/index.js": "5423fea45c5929e496deaf1843967d0b2007470bcee6e8e96ca775bc264b6de3",
+    "src/service.js": "55bfdda4bdd957ab4c0f1a7bf275561b7011de1aa813c76bb591e6ce315d9dbb",
+    "src/store.js": "a51678855b39f09f4bc691570231657368e6b43810cb8b05b2adb9a441561057",
+    "src/summary.js": "7960618fbc34ed7c98b9a4dfb602a566e71477fc4b0d9b7246b9d47d42450355",
+    "src/topics.js": "53f289dc102e450f729fb6ea6ede1c7600e41fccef8ba1826d6e03a5d813584d",
+    "test/digest.test.js": "ae5e35321921ecb81e88f12207a7552514b8d7c1353d7016dc9e2d118c195f8a",
+    "test/upgrade.test.js": "35e48be87c1a4a95c766b9aec480178d07da86881d9da3c94c58747602a26aca",
+    "upgrade-manifests.json": "5e2f055d8d2471e51a147b11cf4ed35703409132ef7091144583bf5f4d4fe061"
   }
 }

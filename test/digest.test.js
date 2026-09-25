@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { previousDayWindow } from '../src/dates.js';
 import { Store, subscriberKey } from '../src/store.js';
 import { parseTopics, matchingTopics, buildQuery } from '../src/topics.js';
 import { parseFeed, ArxivClient, DAY } from '../src/arxiv.js';
@@ -12,6 +13,8 @@ import { DigestService, resolveConfig, localStamp, shouldSchedule } from '../src
 
 const now = Date.parse('2026-09-25T00:00:00Z');
 const config = resolveConfig({allowedAccountIds: ['account-a', 'account-b']});
+const window = previousDayWindow(now, config.timeZone);
+const fixtureReader = {get:async()=>({status:'ready',text:'Synthetic full paper body containing methods and conclusions. '.repeat(40),source:{format:'HTML',url:'https://arxiv.org/html/2609.12345v1',hash:'fixture'}})};
 const silent = {info(){}, warn(){}, error(){}};
 const paper = {id: '2609.12345', version: 1, title: 'Test fixture: 21-cm reionization forecast',
   abstract: 'This is an explicitly synthetic test fixture, not an actual paper. We investigate the 21-cm signal from high-redshift galaxies.',
@@ -118,12 +121,12 @@ test('now and daily deliveries use each user priority before date, deduplicate c
   const b=add(store,'account-b','two@im.wechat',['EoR','JWST','21cm']);
   const fixture=(id,title,published)=>({...paper,id,title,published,abstract:'Synthetic fixture for ordering, not a real paper.',url:`https://arxiv.org/abs/${id}`});
   store.putPapers([
-    fixture('2609.20001','21 cm cosmology and EoR',now-4*DAY),
+    fixture('2609.20001','21 cm cosmology and EoR',now-28*3600000),
     fixture('2609.20003','21-cm signal B',now-DAY),
     fixture('2609.20002','21-cm signal A',now-DAY),
-    fixture('2609.20004','EoR forecast',now-1000),
-    fixture('2609.20005','JWST galaxies',now-500),
-    fixture('2609.20006','Protein folding',now-100),
+    fixture('2609.20004','EoR forecast',now-9*3600000),
+    fixture('2609.20005','JWST galaxies',now-8.5*3600000),
+    fixture('2609.20006','Protein folding',now-8.1*3600000),
   ],now);
   const originalOrder=store.papers(0).map(p=>p.id), sends=[];
   const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async p=>{sends.push(p);return{messageId:`msg${sends.length}`};}});
@@ -146,8 +149,8 @@ test('test selects the best available priority before limiting to one, skipping 
   const store=new Store(':memory:'), sub=add(store,'account-a','one@im.wechat',['protein folding','21cm','EoR']);
   store.patchSub(sub.key,{language:'none'},now);
   store.putPapers([
-    {...paper,title:'21cm cosmology',abstract:'Synthetic fixture.',published:now-3*DAY},
-    {...paper,id:'2609.29999',title:'EoR forecast',abstract:'Synthetic fixture.',published:now-1000},
+    {...paper,title:'21cm cosmology',abstract:'Synthetic fixture.',published:now-28*3600000},
+    {...paper,id:'2609.29999',title:'EoR forecast',abstract:'Synthetic fixture.',published:now-9*3600000},
   ],now);
   const sends=[];
   const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async p=>{sends.push(p);return{messageId:'fixture'};}});
@@ -191,19 +194,19 @@ test('persisted daily key and delivery state prevent duplicates after process re
   let store=new Store(file); const sub=add(store);
   assert.equal(store.enqueue(sub.key,'daily',now,'2026-09-25'),true);
   const run=store.nextRun(); store.runStatus(run.id,'done',now);
-  store.prepareDelivery(sub.key,paper.id,'none',['part1','part2'],now);
+  store.putPapers([paper],now);store.prepareDelivery(sub.key,paper.id,'none',['part1','part2'],now);
   store.deliveryStatus(sub.key,paper.id,'sending',now);
   store.close(); store=new Store(file);
   assert.equal(store.enqueue(sub.key,'daily',now+1000,'2026-09-25'),false);
   assert.equal(store.delivery(sub.key,paper.id).status,'unknown');
-  assert.equal(store.retry(sub.key,false,now),0);
-  assert.equal(store.retry(sub.key,true,now),1);
+  assert.equal(store.retry(sub.key,false,now,window),0);
+  assert.equal(store.retry(sub.key,true,now,window),1);
   store.close(); rmSync(dir,{recursive:true,force:true});
 });
 
 test('same paper and language use one zero-tool host completion; a version/text change invalidates cache', async () => {
   const store=new Store(':memory:'); let calls=0;
-  const s=new Summarizer({store,agentId:config.agentId,clock:()=>now,complete:async p=>{
+  const s=new Summarizer({store,reader:fixtureReader,agentId:config.agentId,clock:()=>now,complete:async p=>{
     calls++;assert.equal(p.execution.mode,'isolated-agent-runtime');assert.equal(p.agentId,'arxiv_bot_v1');
     assert.equal(p.messages.length,1);assert.match(p.systemPrompt,/untrusted/); return {text:summaryText};
   }});
@@ -225,11 +228,11 @@ test('two users get their own account/recipient; cached summary is reused; rerun
   const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,
     complete:async()=>{completions++;return {text:summaryText};},send:async p=>{sends.push(p);return {messageId:`msg${sends.length}`};}});
   service.client={refresh:async()=>{}};
-  service.summarizer=new Summarizer({store,complete:service.complete,agentId:config.agentId,clock:()=>now});
+  service.summarizer=new Summarizer({store,reader:fixtureReader,complete:service.complete,agentId:config.agentId,clock:()=>now});
   for(const sub of [a,b]) {store.enqueue(sub.key,'now',now);await service.process(store.nextRun());}
   assert.equal(completions,1);assert.equal(sends.length,2);
   assert.deepEqual(sends.map(x=>[x.accountId,x.to]),[['account-a','one@im.wechat'],['account-b','two@im.wechat']]);
-  assert.ok(sends.every(s=>s.text.includes(paper.abstract)&&s.text.includes('仅依据 abstract')));
+  assert.ok(sends.every(s=>s.text.includes(paper.abstract)&&s.text.includes('依据正文文本')));
   store.putPapers([{...paper,version:2}],now);
   store.enqueue(a.key,'now',now+1);await service.process(store.nextRun());assert.equal(sends.length,2);
   store.close();
@@ -247,21 +250,21 @@ test('chunked abstracts keep all text; successful chunks are not resent when nex
   const source='A & B: 原文🙂 '.repeat(1000);const chunks=chunkText(source);
   assert.ok(chunks.length>1);assert.ok(chunks.every(c=>c.length<=3500));
   assert.equal(chunks.map(c=>c.replace(/^\[同一篇论文 \d+\/\d+\]\n/,'')).join(''),source);
-  const store=new Store(':memory:');const sub=add(store);store.prepareDelivery(sub.key,paper.id,'none',['one','two'],now);
+  const store=new Store(':memory:');const sub=add(store);store.putPapers([paper],now);store.prepareDelivery(sub.key,paper.id,'none',['one','two'],now);
   let count=0; const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async()=>{
     count++; if(count===2)throw new Error('sendMessage ret=-2 errmsg=prepare failed');return{messageId:'first'};
   }});
   await assert.rejects(service.sendDelivery(sub.key,paper.id,sub.revision),/ret=-2/);
   assert.equal(store.delivery(sub.key,paper.id).next_part,1);assert.equal(store.delivery(sub.key,paper.id).status,'failed');
-  store.retry(sub.key,false,now);const texts=[];service.send=async p=>{texts.push(p.text);return{messageId:'second'};};
+  store.retry(sub.key,false,now,window);const texts=[];service.send=async p=>{texts.push(p.text);return{messageId:'second'};};
   await service.sendDelivery(sub.key,paper.id,sub.revision);assert.deepEqual(texts,['two']);store.close();
 });
 
 test('a network timeout is unknown, not a safe retry; original abstract-only option has no generated content', async () => {
-  const store=new Store(':memory:');const sub=add(store);store.prepareDelivery(sub.key,paper.id,'none',['one'],now);
+  const store=new Store(':memory:');const sub=add(store);store.putPapers([paper],now);store.prepareDelivery(sub.key,paper.id,'none',['one'],now);
   const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async()=>{throw new Error('fetch timeout');}});
   await assert.rejects(service.sendDelivery(sub.key,paper.id,sub.revision));
-  assert.equal(store.delivery(sub.key,paper.id).status,'unknown');assert.equal(store.retry(sub.key,false,now),0);
+  assert.equal(store.delivery(sub.key,paper.id).status,'unknown');assert.equal(store.retry(sub.key,false,now,window),0);
   const formatted=formatPaper(paper,null,'none',['21cm'],1,1);
   assert.ok(formatted.includes(paper.abstract));assert.ok(!formatted.includes('中文概括'));store.close();
 });

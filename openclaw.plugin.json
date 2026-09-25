@@ -1,7 +1,7 @@
 {
   "id": "arxiv-daily",
   "name": "arXiv Daily",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Weixin subscription commands, shared arXiv cache, and daily delivery. Ordinary Weixin messages never start an agent turn while this plugin is active.",
   "categories": [
     "research"
@@ -67,9 +67,10 @@
       },
       "lookbackDays": {
         "type": "integer",
-        "minimum": 3,
+        "minimum": 1,
         "maximum": 30,
-        "default": 7
+        "default": 1,
+        "description": "Legacy compatibility only; always use the previous calendar day in timeZone. Values greater than 1 are ignored."
       },
       "maxResultsPerQuery": {
         "type": "integer",

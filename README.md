@@ -1,10 +1,10 @@
 # OpenClaw arXiv Daily
 
-通过微信指令订阅研究方向，每天接收 arXiv 新论文的英文 abstract、可选中英文概括和链接。按天文、物理、化学、计算机、生物五类提供订阅示例；支持个人关键词优先级，默认北京时间 **08:00** 开始处理。
+通过微信指令订阅研究方向，每天接收**前一个自然日首次提交**的 arXiv 论文：英文 abstract、**阅读正文后**生成的可选中英文概括和链接。按天文、物理、化学、计算机、生物五类提供订阅示例；支持个人关键词优先级，默认北京时间 **08:00** 开始处理。
 
-A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with per-user keyword priorities and optional Chinese or English summaries.
+A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with previous-day filtering, per-user keyword priorities, and Chinese or English summaries grounded in the paper body.
 
-**实验版本 0.2.0**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 23 项离线行为测试，并验证真实 arXiv API 的读取和解析；**尚未完成 Windows Gateway 加载、真实模型认证及微信收件的端到端验证**。
+**实验版本 0.3.0**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 37 项离线行为测试，并验证真实 arXiv API 读取，以及一篇 21-cm 论文的 HTML 和 15 页 PDF 正文提取；**尚未完成 Windows Gateway 加载、真实模型认证及微信收件的端到端验证**。
 
 ## 能做什么
 
@@ -12,7 +12,8 @@ A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with per-user keyw
 - 新匹配论文先按个人优先级排列，同一优先级按首次提交日期从新到旧；多关键词命中只发一次。
 - 每篇保留英文原始 abstract，附 arXiv 页面和 PDF 链接。
 - 可选约 200 字中文或约 200 词英文概括，包含研究空白、工作、方法、结论；也可关闭概括。
-- 概括只依据 abstract，不声称阅读全文；同一论文的同语言概括共用缓存。
+- 优先读取 arXiv HTML 正文，失败再逐页提取 PDF；长论文分段阅读、汇总后概括。正文与同语言概括共用缓存。
+- 每次只筛选前一个自然日，默认按北京时间；首次订阅、试发、重试也不扩大日期范围。
 - 按每人已发送的 arXiv 基础编号去重，不因 v2/v3 更新重复推送。
 - 确定性解析 `/arxiv` 指令；插件生效期间，微信普通文本不会启动 AI 对话。
 - 使用已有 OpenClaw agent 的模型与认证，不需要在本插件中填写额外 API key。
@@ -61,7 +62,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --account "YOUR_FIRST_
 
 公开安装包不包含任何个人账号 ID。安装器会展开可读源码、安装锁定依赖、运行测试、备份配置，然后通过 OpenClaw 的正常插件安装与启用流程完成配置。过程中会停止并重新启动 Gateway。OpenClaw 可能要求审阅本地插件来源或能力；按其正常提示处理，安装器不绕过授权检查。
 
-默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.2.0`。如只想先展开检查源码：
+默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.3.0`。如只想先展开检查源码：
 
 ```powershell
 node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
@@ -69,17 +70,17 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 
 可以加 `--dir "目标目录"`。安装器不会覆盖手工修改过的源码，也不会自动替换其他目录注册的同名插件。已有安装产生冲突时，先核对插件路径并保留修改，不要删除订阅数据库来解决路径问题。原有 cron 维护任务保留。
 
-## 已有安装：在 PowerShell 更新到 0.2.0
+## 已有安装：在 PowerShell 更新到 0.3.0
 
-已装过本项目 0.1.0 试用版或 0.1.1 公开版时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
+已装过本项目 0.1.0、0.1.1 或 0.2.0 时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
 
 ```powershell
-$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.2.0.cjs"
+$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.3.0.cjs"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ChangqIngovo/openclaw-arxiv-daily/main/install-arxiv-daily.cjs" -OutFile $ArxivInstaller
 node $ArxivInstaller --upgrade
 ```
 
-更新器从 OpenClaw 查询实际加载目录，核对已有源码、备份配置与将替换的文件，停止 Gateway，再原地更新、运行测试并启动 Gateway。它保留现有账号、agent、订阅方向、概括语言、暂停状态和发送记录；原有方向顺序直接作为 P1、P2、P3…，不重置数据库。
+更新器从 OpenClaw 查询实际加载目录，核对已有源码、备份配置与将替换的文件，停止 Gateway，再原地更新、运行测试并启动 Gateway。它保留现有账号、agent、订阅方向、概括语言、暂停状态和发送记录；原有方向顺序仍作为 P1、P2、P3…，不重置数据库。旧的 `lookbackDays: 7` 会改为 `1`；运行时也固定使用前一个自然日，旧缓存不会扩展日期范围。旧的 abstract 概括缓存不用于新生成的概括。
 
 如果源码有手工修改，更新器会停止并指出文件，不覆盖这些修改。更新中途失败时，先处理错误；若 Gateway 已停止，安装器会明确提示。备份位置会打印在 PowerShell 中。`--upgrade` 不自动安装缺失插件；第一次安装请用上面的 `--account` 命令。
 
@@ -90,7 +91,7 @@ openclaw plugins inspect arxiv-daily --runtime --json
 openclaw gateway status
 ```
 
-检查插件运行时信息是否加载成功，然后在微信里发送 `/arxiv topics` 和新的 `/arxiv priority` 指令。现有安装目录可能仍包含旧版本号，这是原地更新的正常结果，以目录内 `package.json` 的版本和实际命令行为为准。
+检查插件运行时信息是否加载成功，然后在微信里发送 `/arxiv status` 核对实际日期范围，再用 `/arxiv test` 试发。无需重新订阅；`/arxiv lang zh` 或 `en` 现在均读取正文后概括。现有安装目录可能仍包含旧版本号，这是原地更新的正常结果，以目录内 `package.json` 的版本和实际命令行为为准。
 
 ## 第一次订阅
 
@@ -110,7 +111,7 @@ openclaw gateway status
 
 每人都要自己发送订阅指令。扫描登录二维码不等于创建日报订阅。
 
-`test` 从最近 7 天内匹配方向、尚未向本人发过的论文中，按优先级和日期选 1 篇，该篇计入已发送记录。首次可能需要几分钟；没有匹配论文时结果为 0，不会编造论文。用 `/arxiv status` 查看进度，以手机实际收件为准。
+`test` 从前一个自然日首次提交、匹配方向且尚未向本人发过的论文中，按优先级和日期选 1 篇，该篇计入已发送记录。读取长论文可能需要几分钟或更久；没有匹配论文时结果为 0，不会编造论文。用 `/arxiv status` 查看进度，以手机实际收件为准。
 
 ## 微信命令速查
 
@@ -127,19 +128,19 @@ openclaw gateway status
 | `/arxiv add JWST, cosmic dawn` | 在**优先级末尾追加方向**，保留已有顺序 |
 | `/arxiv remove high redshift` | 删除指定方向；不能删除最后一个方向 |
 | `/arxiv topics` | 查看当前方向和 P1、P2、P3…顺序 |
-| `/arxiv lang zh` | 约 200 字中文概括 |
-| `/arxiv lang en` | 约 200 词英文概括 |
+| `/arxiv lang zh` | 读正文后生成约 200 字中文概括 |
+| `/arxiv lang en` | 读正文后生成约 200 词英文概括 |
 | `/arxiv lang none` | 只发送英文 abstract 和链接，不生成概括 |
-| `/arxiv test` | 按优先级试发 1 篇未发送的近期论文 |
-| `/arxiv now` | 立即处理本人尚未发送的近期论文 |
+| `/arxiv test` | 按优先级试发前一日首次提交且尚未发送的 1 篇 |
+| `/arxiv now` | 立即处理前一日首次提交且本人尚未发送的论文 |
 | `/arxiv status` | 查看订阅、最近任务及投递状态 |
 | `/arxiv pause` | 暂停本人订阅 |
 | `/arxiv resume` | 恢复本人订阅 |
-| `/arxiv retry` | 重试微信明确拒绝的消息 |
-| `/arxiv retry uncertain` | 核对手机后重试结果不确定的消息，可能重复 |
+| `/arxiv retry` | 重试当前前一日范围内微信明确拒绝的消息 |
+| `/arxiv retry uncertain` | 核对手机后重试当前前一日范围内结果不确定的消息，可能重复 |
 | `/arxiv unsubscribe` | 删除本程序内本人的订阅与发送记录 |
 
-`test`、`now`、`retry` 的手动请求至少间隔 1 分钟。暂停、退订或修改方向不能撤回已经提交给微信的消息。退订后重新订阅可能再次收到最近一周的论文。
+`test`、`now`、`retry` 的手动请求至少间隔 1 分钟。暂停、退订或修改方向不能撤回已经提交给微信的消息。退订后重新订阅可能再次收到当前前一日范围内的论文，不会因此扩大到最近一周。
 
 ### 关键词优先级怎么设置
 
@@ -168,7 +169,7 @@ openclaw gateway status
 
 结果为 `P1: 21cm → P2: JWST → P3: EoR → P4: high redshift`。序号必须在当前方向数量范围内，未知方向先用 `/arxiv add` 添加。`add` 放在末尾，`remove` 删除后自动压紧编号；重复添加已有方向不会改变它的位置。
 
-每人的排序独立，不改变其他人的优先级。改变顺序不会把已发送的论文再发一遍。优先级决定**新匹配论文的展示及发送顺序**，不代表 arXiv 返回相关性分数；底层查询仍批量执行并共享缓存。已生成但尚未发完的消息先续传，手动重试沿用原消息内容，优先级调整不会重写已提交的消息。
+每人的排序独立，不改变其他人的优先级。改变顺序不会把已发送的论文再发一遍。优先级决定**新匹配论文的展示及发送顺序**，不代表 arXiv 返回相关性分数；底层查询仍批量执行并共享缓存。仍在当前日期范围内、已生成但尚未发完的消息先续传，手动重试沿用原消息内容；更早的消息不续传，优先级调整不会重写已提交的消息。已经开始发送的旧版消息可能保留旧版概括格式。
 
 ### 五类学科的订阅命令
 
@@ -199,7 +200,20 @@ openclaw gateway status
 3. 可选概括：**研究空白 / 做了什么 / 怎么做的 / 结论**。
 4. 论文页面和 PDF 链接。
 
-概括仅根据 abstract。摘要未交代的信息会说明未交代，不用猜测补齐。长消息会按微信文本限制拆成多段，保留完整 abstract。
+概括依据论文正文文本，覆盖引言、方法、结果、讨论/结论和能够提取的附录；保留研究局限及数值限定，不用猜测补齐正文未说明的信息。消息会注明正文来源（HTML/PDF）、PDF 页数（如适用）、阅读分段数和固定版本链接。长消息会按微信文本限制拆成多段，保留完整 abstract。
+
+### 如何读取论文
+
+1. 先请求与元数据版本对应的 `https://arxiv.org/html/<id>vN`，提取论文主体、标题、公式文本和图表说明，排除网页导航。
+2. HTML 缺失或无可用正文时，下载对应 PDF，使用 PDF.js 在独立工作线程中逐页提取文本。
+3. 32,000 字符以内的正文直接作为概括依据；更长的正文**全部分段**阅读，先提取各段证据，再综合所有分段生成约 200 字/词的四项概括，不只截取开头。
+4. 正文获取失败、某 PDF 页不可提取、超过大小/页数上限时，消息明确标为“未生成正文概括”，只保留原始英文 abstract 和链接。**不会用 abstract 概括冒充正文概括。**
+
+这是正文**文本**阅读，不是对 PDF 版面的视觉审稿。图像本身不做视觉解读；图注和可提取的表格文本会进入输入，复杂公式、表格布局仍可能解析有误。模型生成内容也需要读者核对原文。arXiv 的 HTML 转换存在覆盖和渲染限制，见[官方说明](https://info.arxiv.org/about/accessible_HTML.html)。
+
+当前上限为 HTML 10 MB、PDF 30 MB/300 页、提取文本 48 万字符；超限不会静默截断后宣称已读全文。PDF 解析最多 60 秒。正文失败缓存 30 分钟，避免多人订阅重复请求；成功正文按论文编号和版本缓存，分段笔记也共享，同语言最终概括复用。长论文首次生成会增加模型调用次数和处理时间，后续同论文同语言订阅无需重复生成。
+
+`/arxiv lang none` 不下载正文、不调用模型。已经发出“未生成正文概括”的论文仍计入发送记录，当前没有单篇重新生成或追加概括指令。
 
 ## 每天 08:00 如何运行
 
@@ -207,9 +221,11 @@ openclaw gateway status
 - 首次订阅在当天 08:00 之后，首个自动任务安排在次日；可以先用 `test` 或 `now`。
 - 电脑需开机、联网、保持唤醒，且 Gateway 正常运行。
 - 调度器属于本插件后台服务，**不会新增 `openclaw cron list` 条目**。Heartbeat、Memory Dreaming、Skill review 是其他维护任务。
-- 默认回看最近 7 天首次提交的论文，按每个用户的基础编号去重。首次订阅可能补发最近一周内容；超过 7 天的停机缺口不会自动全量补齐。
-- 没有匹配新论文时不发送空日报。arXiv 索引出现延迟时，论文可能到后续日报才出现。
-- 查询按日缓存；请求串行，间隔至少 3 秒。同一天已经缓存的查询不会持续刷新。
+- **固定筛选前一个自然日 00:00（含）至当天 00:00（不含）首次提交的论文**，时区使用 `timeZone`，默认北京时间。例如 2026-09-25 08:00 仅处理 2026-09-24 00:00–24:00，即 UTC 的 2026-09-23 16:00 至 2026-09-24 16:00（不含）。
+- “新”按 arXiv API 的 `published`（首次版本提交时间）判断，不按 `updated`、期刊出版日期或每日 announcement 批次判断。老论文新发 v2/v3 不因更新而成为当天新论文。
+- 首次订阅、`test`、`now` 和 `retry` 均使用同一日期范围；旧队列、旧缓存和停机恢复不触发历史补发。跨日时停止旧日期任务，已经提交的消息无法撤回。
+- 没有匹配新论文时不发送空日报，也不扩大窗口凑数。arXiv 在处理后才提供可检索元数据；索引延迟、休刊/周末或停机可能导致符合提交日期的论文未及时可见。**严格不补历史意味着可能漏掉迟到论文**，不承诺覆盖官方每个公告批次。
+- 查询按日缓存；元数据与正文下载请求串行，共用至少 3 秒的请求间隔。同一天已经缓存的查询不会持续刷新。
 - 抓取或概括失败后，最多在 15 分钟和 30 分钟后再试两次。发送失败单独记录，不自动重发结果不明的消息。
 
 **“已提交”只表示微信接口返回消息 ID，不表示手机已显示或已读。** 发送时超时或进程中断会记为“不确定”，核对手机后才使用 `retry uncertain`。已成功提交的前面段落不会再次提交。
@@ -245,12 +261,12 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --add-account "YOUR_NE
 
 安装器保留已有允许列表，增加账号路由并重启 Gateway。随后新用户在自己的微信中发送 `/arxiv subscribe ...`。登录二维码不是供多人反复扫描的永久加好友码。
 
-[config.example.json](config.example.json) 只展示插件配置片段，**不要用它覆盖完整的 `openclaw.json`**。`sendTime`、`timeZone`、`lookbackDays` 等是管理员的全局设置；当前没有 `/arxiv time` 或切换数据源的微信指令。
+[config.example.json](config.example.json) 只展示插件配置片段，**不要用它覆盖完整的 `openclaw.json`**。`sendTime`、`timeZone` 等是管理员的全局设置；`lookbackDays` 仅保留旧配置兼容，运行时固定为前一个自然日；当前没有 `/arxiv time` 或切换数据源的微信指令。
 
 ## 先用两个账号验收，再扩到 50 人
 
 1. 两人订阅不同方向，分别查看 `/arxiv topics`，确认互不影响。
-2. 分别设置 `zh` 和 `en` 并试发，核对手机上的完整 abstract、概括、链接及实际收件人。无匹配论文时用状态确认 0 篇。
+2. 分别设置 `zh` 和 `en` 并试发，核对手机上的完整 abstract、正文概括及来源标注、链接、日期范围和实际收件人。无匹配论文时用状态确认 0 篇。
 3. 分别设置不同优先级，检查收到的论文是否先 P1 再 P2，同级由新到旧；普通“你好”应无 AI 回复，`/arxiv help` 应正常回复。
 4. 重启 Gateway，再执行 `now`，检查设置保留且已提交论文不重复。
 5. 两人至少连续 48 小时不发新指令，观察有匹配新论文时是否仍能自动收到日报。
@@ -270,7 +286,7 @@ npm run build:installer
 npm run check:installer
 ```
 
-23 项离线测试覆盖个人优先级排序与持久化、试发选择、多用户隔离、普通聊天拦截、北京时间调度、概括缓存、分页、去重、不确定发送、退订，以及更新前的源码检查等行为。它们不会调用真实模型或向微信发消息。
+37 项离线测试覆盖日期边界、夏令时、缓存/重试/跨日限制、HTML/PDF 正文提取、长论文末尾证据、失败标注、个人优先级、多用户隔离、概括缓存、分页、去重、不确定发送，以及旧版本升级检查等行为。它们不会调用真实模型或向微信发消息。
 
 安装包由明确列出的源码文件构建，包含 SHA-256 校验；`check:installer` 检查安装包与当前源码是否一致。修改源码或 README 后请重新构建。安装流程目前只适配 Windows，未验证 Linux/macOS 部署；OpenClaw 插件接口为实验接口，暂时保持目标版本。
 
@@ -280,10 +296,11 @@ npm run check:installer
 
 默认数据库位于 `%USERPROFILE%\.openclaw\arxiv-daily\state.sqlite`；配置备份位于状态目录的 `arxiv-daily-backups`。数据库、配置、凭据、日志、二维码信息都不应上传到公开仓库。
 
-本插件没有遥测或额外服务端。检索关键词会发送给 arXiv，论文标题与 abstract 会发送给已配置的模型服务；OpenClaw 和微信适配器的日志按其自身配置保存。
+本插件没有遥测或额外服务端。检索关键词会发送给 arXiv，选择概括时，论文标题、abstract、提取的正文及分段阅读笔记会发送给已配置的模型服务；OpenClaw 和微信适配器的日志按其自身配置保存。
 
 - [OpenClaw 插件 hooks](https://docs.openclaw.ai/plugins/hooks)
 - [OpenClaw 模型运行时](https://docs.openclaw.ai/plugins/sdk-runtime/models)
 - [OpenClaw 插件安装](https://docs.openclaw.ai/cli/plugins/install)
+- [PDF.js](https://mozilla.github.io/pdf.js/)
 - [arXiv API 手册](https://info.arxiv.org/help/api/user-manual.html)
 - [腾讯微信插件](https://github.com/Tencent/openclaw-weixin)

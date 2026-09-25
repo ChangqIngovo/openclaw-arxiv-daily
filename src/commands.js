@@ -1,5 +1,6 @@
 import { parseTopics, normalize } from './topics.js';
 import { subscriberKey } from './store.js';
+import { previousDayWindow } from './dates.js';
 
 export const CHANNEL = 'openclaw-weixin';
 export const HELP = [
@@ -9,15 +10,16 @@ export const HELP = [
   '/arxiv add JWST — 在优先级末尾增加方向',
   '/arxiv remove high redshift — 移除方向',
   '/arxiv topics — 查看方向及 P1、P2…优先级；/arxiv priority 也可查看',
-  '/arxiv lang zh — 中文概括；en 英文；none 只发英文 abstract',
-  '/arxiv test — 按优先级试发最近 7 天内尚未发过的 1 篇',
-  '/arxiv now — 现在补发最近 7 天内尚未发过的论文',
+  '/arxiv lang zh — 读正文后中文概括；en 英文；none 只发英文 abstract',
+  '/arxiv test — 按优先级试发前一个自然日新提交且尚未发过的 1 篇',
+  '/arxiv now — 现在处理前一个自然日新提交且尚未发过的论文',
   '/arxiv status — 订阅、运行与发送状态',
   '/arxiv retry — 重试明确被微信拒绝的消息',
   '/arxiv retry uncertain — 核对手机后重试不确定的消息，可能重复',
   '/arxiv pause /arxiv resume — 暂停/恢复',
   '/arxiv unsubscribe — 删除本人的订阅和发送记录',
   '默认北京时间 08:00 开始，逐篇发送。普通聊天不会调用模型。',
+  '严格按首次提交日期筛选，不补发更早论文；读取不到正文时不生成概括。',
   '关键词从左到右为 P1、P2…；P1 最高。同一篇匹配多个方向只发一次，同级按日期从新到旧。',
 ].join('\n');
 
@@ -96,6 +98,7 @@ export function runCommand(content, who, service) {
     return [
       `订阅：${sub.active ? '启用' : '暂停'}\n方向优先级（P1 最高）：\n${priorityList(sub.topics)}`,
       `概括：${sub.language}；每日 ${config.sendTime} ${config.timeZone}`,
+      `本次范围：${previousDayWindow(now, config.timeZone).day} 00:00–24:00（${config.timeZone}）首次提交的论文；不补历史。`,
       `最近任务：${run ? names[run.status] || run.status : '未运行'}${run ? `；已提交 ${run.sent}/${run.total} 篇` : ''}`,
       `累计：已提交 ${counts.submitted || 0}，失败 ${counts.failed || 0}，不确定 ${counts.unknown || 0}`,
       run?.error ? `原因：${run.error}` : '',
@@ -108,15 +111,15 @@ export function runCommand(content, who, service) {
     if (command === 'retry') {
       if (args && args !== 'uncertain') return '用 /arxiv retry；结果不确定的消息请先核对手机，再用 /arxiv retry uncertain。';
       if (store.latestRun(who.key)?.status === 'running') return '任务仍在运行，请稍后再重试。';
-      const changed = store.retry(who.key, args === 'uncertain', now);
-      if (!changed) return '没有可重试的消息。抓取或概括失败请使用 /arxiv now。';
+      const changed = store.retry(who.key, args === 'uncertain', now, previousDayWindow(now, config.timeZone));
+      if (!changed) return '当前前一日范围内没有可重试的消息；更早消息不会补发。抓取或概括失败请使用 /arxiv now。';
     }
     const queued = store.enqueue(who.key, command, now);
     if (!queued) return '你的任务已经在队列中，用 /arxiv status 查看进度。';
     store.patchSub(who.key, {last_manual: now}, now);
     // The service's own timer picks this up within 30 seconds. Do not create
     // background model work inside a short-lived inbound hook/permission scope.
-    return command === 'test' ? '已加入试发队列：按你的优先级取最近 7 天内尚未发过的 1 篇；这篇之后不会重复日报推送。'
+    return command === 'test' ? `已加入试发队列：按你的优先级取 ${previousDayWindow(now, config.timeZone).day}（${config.timeZone}）首次提交且尚未发过的 1 篇；这篇之后不会重复日报推送。`
       : '已加入处理队列。需要几分钟；/arxiv status 可查看结果。';
   }
   return '未识别的日报指令。发送 /arxiv help 查看用法。';

@@ -1,6 +1,6 @@
 {
   "name": "openclaw-arxiv-daily",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Deterministic per-user arXiv subscriptions for OpenClaw Weixin",
   "type": "module",
   "private": true,
@@ -19,7 +19,9 @@
     "check:installer": "node scripts/build-installer.mjs --check"
   },
   "dependencies": {
-    "fast-xml-parser": "5.11.1"
+    "cheerio": "1.2.0",
+    "fast-xml-parser": "5.11.1",
+    "pdfjs-dist": "6.3.289"
   },
   "peerDependencies": {
     "openclaw": "2026.9.6"

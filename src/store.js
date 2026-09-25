@@ -90,7 +90,8 @@ export class Store {
       this.db.exec('COMMIT');
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
-  papers(since) { return this.db.prepare('SELECT data FROM papers WHERE published>=? ORDER BY published DESC,id').all(since).map(r => JSON.parse(r.data)); }
+  papers(since, until = Number.MAX_SAFE_INTEGER) { return this.db.prepare('SELECT data FROM papers WHERE published>=? AND published<? ORDER BY published DESC,id').all(since, until).map(r => JSON.parse(r.data)); }
+  paper(id) { const r = this.db.prepare('SELECT data FROM papers WHERE id=?').get(id); return r ? JSON.parse(r.data) : undefined; }
   summary(key) { const r = this.db.prepare('SELECT data FROM summaries WHERE key=?').get(key); return r ? JSON.parse(r.data) : undefined; }
   putSummary(key, data, now) { this.db.prepare('INSERT OR REPLACE INTO summaries VALUES (?,?,?)').run(key, JSON.stringify(data), now); }
   enqueue(key, kind, now, day = null) {
@@ -127,9 +128,10 @@ export class Store {
     this.db.prepare('UPDATE deliveries SET status=?,next_part=?,message_ids=?,updated=?,error=NULL WHERE subscriber=? AND paper=?')
       .run(next >= d.parts.length ? 'submitted' : 'pending', next, JSON.stringify([...d.message_ids, messageId]), now, key, paper);
   }
-  retry(key, uncertain, now) {
-    return this.db.prepare(`UPDATE deliveries SET status='pending',error=NULL,updated=? WHERE subscriber=? AND status IN (${uncertain ? "'failed','unknown'" : "'failed'"})`)
-      .run(now, key).changes;
+  retry(key, uncertain, now, window) {
+    return this.db.prepare(`UPDATE deliveries SET status='pending',error=NULL,updated=? WHERE subscriber=? AND status IN (${uncertain ? "'failed','unknown'" : "'failed'"})
+      AND paper IN (SELECT id FROM papers WHERE published>=? AND published<?)`)
+      .run(now, key, window.since, window.until).changes;
   }
   deliveryCounts(key) { return this.db.prepare('SELECT status,count(*) AS n FROM deliveries WHERE subscriber=? GROUP BY status').all(key); }
   unsubmitted(key) { return this.db.prepare("SELECT * FROM deliveries WHERE subscriber=? AND status!='submitted' ORDER BY updated").all(key).map(r => this.delivery(key, r.paper)); }

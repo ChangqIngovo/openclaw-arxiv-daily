@@ -11,7 +11,7 @@
           "sendTime": "08:00",
           "timeZone": "Asia/Shanghai",
           "maxSubscribers": 50,
-          "lookbackDays": 7,
+          "lookbackDays": 1,
           "maxResultsPerQuery": 2000,
           "requestIntervalMs": 3200
         }

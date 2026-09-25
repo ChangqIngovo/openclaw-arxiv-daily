@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Windows installer for arxiv-daily 0.2.0, OpenClaw 2026.9.6.
+// Windows installer for arxiv-daily 0.3.0, OpenClaw 2026.9.6.
 // No shell eval, policy bypass, API-key copying, or outbound test messages.
 // --prepare-only extracts the readable source without changing OpenClaw.
 const fs = require('node:fs');
@@ -16,7 +16,7 @@ const option = name => {const at=args.indexOf(name);return at<0?undefined:args[a
 const options = name => args.flatMap((arg, i) => arg === name ? [args[i + 1]] : []);
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const stateDir = path.resolve(process.env.OPENCLAW_STATE_DIR || path.join(os.homedir(), '.openclaw'));
-let target = path.resolve(option('--dir') || path.join(stateDir, 'local-plugins', 'arxiv-daily-0.2.0'));
+let target = path.resolve(option('--dir') || path.join(stateDir, 'local-plugins', 'arxiv-daily-0.3.0'));
 const prepareOnly = args.includes('--prepare-only');
 const upgrading = args.includes('--upgrade');
 const accountToAdd = option('--add-account');
@@ -39,7 +39,7 @@ function checkUpgrade(directory) {
   const previous = JSON.parse(Buffer.from(PAYLOAD.find(p=>p.name==='upgrade-manifests.json').data,'base64').toString('utf8'));
   const next = JSON.parse(Buffer.from(PAYLOAD.find(p=>p.name==='package.json').data,'base64').toString('utf8'));
   const knownPackage=pkg.name==='openclaw-arxiv-daily'||(pkg.version==='0.1.0'&&pkg.name==='arxiv-daily-local');
-  if(!knownPackage||manifest.id!=='arxiv-daily'||(!previous[pkg.version]&&pkg.version!==next.version))fail('Only a supported arxiv-daily installation (0.1.0, 0.1.1, or this version) can be upgraded automatically. No files changed.');
+  if(!knownPackage||manifest.id!=='arxiv-daily'||(!previous[pkg.version]&&pkg.version!==next.version))fail('Only a supported arxiv-daily installation (0.1.0, 0.1.1, 0.2.0, or this version) can be upgraded automatically. No files changed.');
   for(const item of PAYLOAD){
     const file=path.join(directory,item.name);
     if(!fs.existsSync(file))continue;
@@ -129,8 +129,8 @@ function main() {
   const claw=(cmd,options={})=>runNode(host.entry,cmd,options);
   const current=jsonOutput(claw(['config','get','plugins.entries.arxiv-daily','--json'],{capture:true,allowFailure:true}));
   const defaults={allowedAccountIds:[],agentId:'arxiv_bot_v1',
-    defaultTopics:['21cm','EoR','high redshift'],defaultLanguage:'zh',sendTime:'08:00',timeZone:'Asia/Shanghai',maxSubscribers:50,lookbackDays:7};
-  const configured={...defaults,...current?.config};
+    defaultTopics:['21cm','EoR','high redshift'],defaultLanguage:'zh',sendTime:'08:00',timeZone:'Asia/Shanghai',maxSubscribers:50,lookbackDays:1};
+  const configured={...defaults,...current?.config,lookbackDays:1};
   if(!Array.isArray(configured.allowedAccountIds))fail('Existing allowedAccountIds is invalid; inspect it before continuing.');
   if(option('--agent'))configured.agentId=option('--agent');
   if(!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(configured.agentId))fail('Invalid agent ID.');
@@ -157,7 +157,7 @@ function main() {
       ...(process.env.APPDATA?[path.join(process.env.APPDATA,'npm','node_modules','npm','bin','npm-cli.js')]:[])];
     const npm=npmCandidates.find(p=>fs.existsSync(p));
     if(!npm)fail('Cannot locate npm-cli.js next to Node. No configuration has been changed.');
-    console.log('Installing pinned XML parser dependencies; lifecycle scripts are disabled.');
+    console.log('Installing pinned XML, HTML and PDF parser dependencies; lifecycle scripts are disabled.');
     runNode(npm,['ci','--ignore-scripts','--omit=dev','--omit=peer','--no-audit','--no-fund'],{cwd:target});
     // Resolve the public SDK against the already-installed host, without installing another host.
     const sdkLink=path.join(target,'node_modules','openclaw');
@@ -165,7 +165,7 @@ function main() {
       if(fs.realpathSync(sdkLink).toLowerCase()!==fs.realpathSync(host.root).toLowerCase())fail(`Unexpected SDK path at ${sdkLink}`);
     }else fs.symlinkSync(host.root,sdkLink,'junction');
     console.log('Running behavior tests against the installed source.');
-    for(const name of ['digest.test.js','upgrade.test.js'])runNode(path.join(target,'test',name),[],{cwd:target});
+    for(const name of fs.readdirSync(path.join(target,'test')).filter(n=>n.endsWith('.test.js')).sort())runNode(path.join(target,'test',name),[],{cwd:target});
   };
   if(!accountToAdd&&!upgrading)installDependencies();
   const backupFolder=backupConfig();
@@ -201,7 +201,7 @@ function main() {
   claw(['plugins','inspect','arxiv-daily','--runtime','--json']);
   claw(['channels','status','--channel','openclaw-weixin','--probe'],{allowFailure:true});
   console.log('\nInstall/configuration commands finished. This does not yet prove actual Weixin receipt.');
-  console.log(upgrading?'Existing subscriptions and delivery records are preserved. In Weixin send /arxiv topics; use /arxiv priority 1 21cm cosmology to move an existing topic.':'In EACH Weixin chat send:\n/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST\n/arxiv test');
+  console.log(upgrading?'Existing subscriptions and delivery records are preserved. Only the previous calendar day is processed; summaries now read the paper body. In Weixin send /arxiv status, then /arxiv test.':'In EACH Weixin chat send:\n/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST\n/arxiv test');
   console.log('Then check /arxiv status and actual phone delivery. Ordinary text should get no AI reply.');
   console.log(`Daily start: ${configured.sendTime} ${configured.timeZone}; scheduler is a plugin service, not an OpenClaw cron entry.`);
 }
