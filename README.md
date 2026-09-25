@@ -39,7 +39,7 @@ node "$HOME/install-arxiv-daily.cjs"
 
 `test` 只试发前一天、尚未发过的 1 篇。若无符合条件的新论文，用 `status` 看结果。普通聊天不会启动 AI 对话。
 
-版本 **0.5.1**；适配 OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。已有其他宿主版本时，安装器会提示，不自动替换。模型登录方式与可用额度以服务商及 OpenClaw 配置为准。
+版本 **0.5.1**；适配 OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。已有其他宿主版本时，安装器会提示，模型登录方式与可用额度以服务商及 OpenClaw 配置为准。
 
 ## 从旧版升级
 
@@ -68,7 +68,7 @@ node "$HOME/install-arxiv-daily.cjs" --configure-model
 | Gemini | Google AI Studio API key | 从本机实际可用列表选择 |
 | 其他 | OpenClaw 已支持的服务商 | 输入 provider ID 后选择 |
 
-不在日报代码里写死模型名称；登录与密钥由 OpenClaw 管理。更换时只设置日报所用 agent 的主模型，不修改其他 agent 的主模型。具体入口和说明见 [MODEL_SETUP.md](MODEL_SETUP.md)。
+具体入口和说明见 [MODEL_SETUP.md](MODEL_SETUP.md)。
 
 ## 微信命令
 
