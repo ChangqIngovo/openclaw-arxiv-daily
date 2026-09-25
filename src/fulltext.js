@@ -95,7 +95,7 @@ export class PaperReader {
       await this.waitForRequest(requestSignal);
       const response = await this.fetchImpl(target, {signal: requestSignal, redirect: 'manual', headers: {
         Accept: format === 'HTML' ? 'text/html' : 'application/pdf',
-        'User-Agent': 'openclaw-arxiv-daily/0.5.0 (OpenClaw literature digest)',
+        'User-Agent': 'openclaw-arxiv-daily/0.5.1 (OpenClaw literature digest)',
       }});
       if ([301,302,303,307,308].includes(response.status)) {
         const location = response.headers.get('location'); await response.body?.cancel();

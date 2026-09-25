@@ -1,7 +1,7 @@
 {
   "id": "arxiv-daily",
   "name": "arXiv Daily",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Personal Weixin arXiv daily digest, user-selected models, and optional Zotero bookmarks.",
   "categories": [
     "research"

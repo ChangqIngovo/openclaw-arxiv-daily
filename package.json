@@ -1,6 +1,6 @@
 {
   "name": "openclaw-arxiv-daily",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Personal arXiv digest for OpenClaw Weixin on Windows and macOS",
   "type": "module",
   "private": true,

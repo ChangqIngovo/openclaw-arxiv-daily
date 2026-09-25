@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, symlinkSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, realpathSync, readdirSync, symlinkSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -99,7 +99,9 @@ test('personal Zotero setup identifies the key owner, encrypts only that grant a
   const zconfig = commitZotero(prepared,dir,config,now);
   assert.equal(zconfig.enabled,true); assert.equal(loadApp(file).mode,'personal');
   assert.ok(!readFileSync(file,'utf8').includes('personal-fixture-key'));
-  const check = new Store(dbPath); t.after(() => check.close()); const zdb = new ZoteroStore(check);
+  const check = new Store(dbPath);
+  try {
+  const zdb = new ZoteroStore(check);
   assert.equal(zdb.account(other.key).credential,oldCredential);
   const owner = subscriberKey('mine','owner@im.wechat'), bound = zdb.account(owner);
   assert.equal(vault.open(owner,bound.credential).userId,'111'); assert.equal(bound.target.key,'ABCDEFGH');
@@ -109,6 +111,7 @@ test('personal Zotero setup identifies the key owner, encrypts only that grant a
   zservice.command(owner,'zotero','disconnect');
   assert.match(zservice.command(owner,'zotero','connect'),/--configure-zotero/);
   assert.equal(zdb.account(owner),undefined); assert.equal(zdb.account(other.key).credential,oldCredential);
+  } finally { check.close(); }
 });
 
 test('Zotero setup rejects missing permissions and refuses to replace a lost encryption key', async t => {
@@ -169,7 +172,7 @@ test('installer resolves macOS/npm symlinks and Windows npm layouts, including s
   // Windows symlink creation may need Developer Mode; junction fixture still tests realpath lookup.
   if (process.platform !== 'win32') {
     symlinkSync(join(root,'openclaw.mjs'),join(bin,'openclaw'));
-    assert.equal(findNodeEntry('openclaw','openclaw.mjs',{env:{PATH:bin},execPath:join(bin,'node'),platform:'darwin',localState:dir}),join(root,'openclaw.mjs'));
+    assert.equal(realpathSync(findNodeEntry('openclaw','openclaw.mjs',{env:{PATH:bin},execPath:join(bin,'node'),platform:'darwin',localState:dir})),realpathSync(join(root,'openclaw.mjs')));
   }
   const win = join(dir,'Program Files','nodejs'), winroot = join(win,'node_modules','openclaw');
   mkdirSync(winroot,{recursive:true}); writeFileSync(join(winroot,'openclaw.mjs'),'');
