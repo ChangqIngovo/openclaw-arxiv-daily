@@ -1,6 +1,6 @@
 {
   "name": "openclaw-arxiv-daily",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Deterministic per-user arXiv subscriptions for OpenClaw Weixin",
   "type": "module",
   "private": true,

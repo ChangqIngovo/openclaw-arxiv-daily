@@ -1,7 +1,8 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createRequire } from 'node:module';
-import { dirname, join, sep } from 'node:path';
+import { dirname } from 'node:path';
+import { pdfResourcePaths } from './pdf-resources.js';
 
 const root = dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json'));
 let task;
@@ -10,8 +11,7 @@ try {
     data: workerData.bytes, password: '', useWorkerFetch: false, useWasm: false,
     stopAtErrors: true, disableFontFace: true, useSystemFonts: false,
     isEvalSupported: false, enableXfa: false, verbosity: 0,
-    cMapUrl: join(root, 'cmaps') + sep, cMapPacked: true,
-    standardFontDataUrl: join(root, 'standard_fonts') + sep,
+    ...pdfResourcePaths(root), cMapPacked: true,
   });
   const doc = await task.promise;
   if (doc.numPages > workerData.maxPages) throw new Error('PDF 超过 300 页处理上限，未截断概括');
@@ -33,7 +33,8 @@ try {
   parentPort.postMessage({text, pages: doc.numPages});
 } catch (error) {
   const message = String(error?.message || '');
-  parentPort.postMessage({error: /^PDF |^正文/.test(message) ? message : 'PDF 无法完整提取文本，未生成概括'});
+  parentPort.postMessage({error: /^PDF |^正文/.test(message) ? message : 'PDF 无法完整提取文本，未生成概括',
+    cause: {name: error?.name || 'Error', message: message.slice(0, 1500)}});
 } finally {
   await task?.destroy().catch(() => {});
 }

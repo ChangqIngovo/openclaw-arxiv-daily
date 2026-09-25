@@ -52,8 +52,13 @@ export function extractPdf(bytes, signal) {
     const timer = setTimeout(() => finish(new BodyUnavailable('PDF 解析超时，未生成概括')), 60_000);
     signal?.addEventListener('abort', aborted, {once: true});
     if (signal?.aborted) aborted();
-    worker.once('message', result => result.error ? finish(new BodyUnavailable(result.error)) : finish(null, result));
-    worker.once('error', () => finish(new BodyUnavailable('PDF 解析失败')));
+    worker.once('message', result => {
+      // Keep the parser cause in local test/log errors. PaperReader publishes only
+      // the friendly error.message, so filesystem paths do not enter Weixin replies.
+      const cause = result.cause ? Object.assign(new Error(result.cause.message), {name: result.cause.name}) : undefined;
+      result.error ? finish(new BodyUnavailable(result.error, {cause})) : finish(null, result);
+    });
+    worker.once('error', error => finish(new BodyUnavailable('PDF 解析失败', {cause: error})));
     worker.once('exit', () => { if (!settled) finish(new BodyUnavailable('PDF 解析进程提前退出')); });
   });
 }
@@ -90,7 +95,7 @@ export class PaperReader {
       await this.waitForRequest(requestSignal);
       const response = await this.fetchImpl(target, {signal: requestSignal, redirect: 'manual', headers: {
         Accept: format === 'HTML' ? 'text/html' : 'application/pdf',
-        'User-Agent': 'openclaw-arxiv-daily/0.3.0 (OpenClaw literature digest)',
+        'User-Agent': 'openclaw-arxiv-daily/0.3.1 (OpenClaw literature digest)',
       }});
       if ([301,302,303,307,308].includes(response.status)) {
         const location = response.headers.get('location'); await response.body?.cancel();

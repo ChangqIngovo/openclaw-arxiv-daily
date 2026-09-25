@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { dirname, win32 } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { Store } from '../src/store.js';
+import { pdfResourcePaths } from '../src/pdf-resources.js';
 import { PaperReader, extractHtml, extractPdf, MAX_BODY_CHARS } from '../src/fulltext.js';
 import { Summarizer, splitBody, formatPaper } from '../src/summary.js';
 
@@ -51,6 +55,33 @@ test('PDF parser reads every page and fails honestly on an unreadable page', asy
   await assert.rejects(extractPdf(fixturePdf([paragraph,'2'])),/第 2 页文本不足/);
 });
 
+test('PDF.js accepts Windows drive and UNC resource paths, rejecting the old trailing backslash', async () => {
+  const {getDocument}=await import('pdfjs-dist/legacy/build/pdf.mjs');
+  for (const root of [String.raw`C:\Users\Example User\研究 #1\node_modules\pdfjs-dist`, String.raw`\\server\share\pdfjs-dist`]) {
+    const bytes=fixturePdf([paragraph]);
+    assert.throws(()=>getDocument({data:new Uint8Array(bytes),cMapUrl:win32.join(root,'cmaps')+win32.sep}), /must include trailing slash/);
+    assert.throws(()=>getDocument({data:new Uint8Array(bytes),standardFontDataUrl:win32.join(root,'standard_fonts')+win32.sep}), /must include trailing slash/);
+    const paths=pdfResourcePaths(root);
+    assert.ok(Object.values(paths).every(p=>p.endsWith('/')&&!p.includes('\\')));
+    const task=getDocument({data:new Uint8Array(bytes),...paths,useWorkerFetch:false,useWasm:false,verbosity:0});
+    try { assert.equal((await task.promise).numPages,1); } finally { await task.destroy(); }
+  }
+  // The same normalized paths still work with Node's actual file reader.
+  const installedRoot=dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json'));
+  const paths=pdfResourcePaths(installedRoot.replaceAll('/','\\'));
+  assert.ok((await readFile(paths.standardFontDataUrl+'LiberationSans-Regular.ttf')).byteLength>0);
+  assert.ok((await readFile(paths.cMapUrl+'Adobe-Japan1-0.bcmap')).byteLength>0);
+});
+
+test('PDF parser failures retain their cause for local diagnostics', async () => {
+  await assert.rejects(extractPdf(Buffer.from('%PDF-1.4\ninvalid fixture')),error=>{
+    assert.equal(error.name,'Error');
+    assert.match(error.message,/PDF 无法完整提取文本/);
+    assert.ok(error.cause?.message); assert.equal(error.cause.name,'InvalidPDFException');
+    return true;
+  });
+});
+
 test('HTML source is version-pinned and shared across subscribers; a new version triggers a fresh read', async () => {
   const store=new Store(':memory:'); const urls=[];let waits=0;
   const reader=new PaperReader({store,clock:()=>now,waitForRequest:async()=>{waits++;},fetchImpl:async u=>{urls.push(String(u));return new Response(html);}});
@@ -66,7 +97,7 @@ test('missing HTML falls back to PDF; total failure is cached briefly without ca
   const reader=new PaperReader({store,clock:()=>now,fetchImpl:async u=>{
     requests++;return String(u).includes('/html/')?new Response('missing',{status:404}):new Response(fixturePdf([paragraph+' PDF-CONCLUSION']));
   }});
-  const body=await reader.get(paper);assert.equal(body.source.format,'PDF');assert.match(body.text,/PDF-CONCLUSION/);assert.equal(requests,2);
+  const body=await reader.get(paper);assert.equal(body.status,'ready',body.reason);assert.equal(body.source.format,'PDF');assert.match(body.text,/PDF-CONCLUSION/);assert.equal(requests,2);
   const unavailable=new PaperReader({store,clock:()=>now,fetchImpl:async()=>{requests++;return new Response('missing',{status:404});}});
   const other={...paper,id:'2609.40002'};
   const summarizer=new Summarizer({store,reader:unavailable,agentId:'fixture',complete:async()=>{modelCalls++;}});

@@ -57,5 +57,33 @@
     "test/digest.test.js": "ae5e35321921ecb81e88f12207a7552514b8d7c1353d7016dc9e2d118c195f8a",
     "test/upgrade.test.js": "35e48be87c1a4a95c766b9aec480178d07da86881d9da3c94c58747602a26aca",
     "upgrade-manifests.json": "5e2f055d8d2471e51a147b11cf4ed35703409132ef7091144583bf5f4d4fe061"
+  },
+  "0.3.0": {
+    ".gitattributes": "93699a1108fd9da226b06f84ee12e317f4ea4d2f18a8fd05260443fd1bf2faef",
+    ".gitignore": "afbb422c72c18c5af81a1c8eeec12c9ada532c88a7df90e20a77505ab7864fe9",
+    "CONTRIBUTING.md": "80525658360c87b9d7a472fabf7677dfb3d8f99bbcd0923f8e804af909f1d28d",
+    "LICENSE": "a5905566c9667e850d1e331590bcf188c6c3dd988b0ee8a5c11928ebc412e80b",
+    "README.md": "9bcc73c05859c5472182cb55e5804b3e13b4a56fc174bc4cef02580a9a310a4c",
+    "config.example.json": "bb629157c4dfb33bca4ab283d30d2d235234d21f949108bf55b3a1341179a567",
+    "installer-template.cjs": "f18a64d01d8bc9314db05b90c883d5d9a8e7f85a339c5fa049dea879fa3c0f6b",
+    "openclaw.plugin.json": "4022a2dcaf14d1b7366e07405e68bc291bb0c71a135ea518e97f6ff7366c3395",
+    "package-lock.json": "71776b3d135b59a4038994d00bfc4383d726e0db662aac85c31c8bbadec3abd5",
+    "package.json": "b7255654b2a6dad42b68c527a20cf28acc9cfd635895460c17ccb66e78071ff1",
+    "scripts/build-installer.mjs": "7ecbf4fd042abca3d986c53451aeea3a065d73e6a1c37ee29191a0a2ae811fe4",
+    "src/arxiv.js": "fdc4b147ef132eaf917146949148d550669d545b6a728d85636a94ce1f6586f2",
+    "src/commands.js": "4295d7ffad9e308ec57daf17bf09e7bcfaea9f827b4c25831925914c87772a24",
+    "src/dates.js": "7107c0f7b28a80b0b2f8038838bc48199d4c526f7b10c8b6b628a848bb8bd393",
+    "src/fulltext.js": "f1a23d90885a59a0a34950f2de7b2a387567a4ff7fa6e0aadc4c8ed2efa3ee61",
+    "src/index.js": "5423fea45c5929e496deaf1843967d0b2007470bcee6e8e96ca775bc264b6de3",
+    "src/pdf-worker.js": "3df424951d96fc579cbfff230e51698c93b79957b58595339c9788ff2c3692d3",
+    "src/service.js": "681980f16dcd42dd408b30b6546be8b052097e89623fb49d21071d612637ed65",
+    "src/store.js": "9132a7edf7cd9a4c073fc16103910f45804c382c5067ab775215b7eb06592aea",
+    "src/summary.js": "4c8daf45d710409d5f0eae1d0f6540ce2e006a29b7581c4f726add1d922a939c",
+    "src/topics.js": "53f289dc102e450f729fb6ea6ede1c7600e41fccef8ba1826d6e03a5d813584d",
+    "test/date-window.test.js": "1d3c97e32e682b8c0ceba6c87b1214c230c026516f06d23b559792dbd08d7e22",
+    "test/digest.test.js": "c46b3e28efe91d8e52dfeacf6629f98d9cd6b2dc9e2eea836e68419f11d24e00",
+    "test/fulltext.test.js": "6dd6b8600b722b5b314a01c2fdef7e113391b09a3122af714e09db4cae7d4284",
+    "test/upgrade.test.js": "9ca493449220625a0094aebcd2c9a8ad341dfb3bbdf94c782151ac8d6b7872fb",
+    "upgrade-manifests.json": "5106c9edd53207e9fc3d06e4fb330a970f62a64d71c0b7494b1dd16241f0716e"
   }
 }
