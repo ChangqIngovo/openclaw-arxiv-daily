@@ -18,13 +18,15 @@
           "defaultLanguage": "zh",
           "sendTime": "08:00",
           "timeZone": "Asia/Shanghai",
-          "maxSubscribers": 50,
+          "maxSubscribers": 1,
           "lookbackDays": 1,
           "maxResultsPerQuery": 2000,
           "requestIntervalMs": 3200,
           "zotero": {
             "enabled": false
-          }
+          },
+          "personal": true,
+          "ownerPeerId": "YOUR_VERIFIED_PEER@im.wechat"
         }
       }
     }

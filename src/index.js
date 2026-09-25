@@ -5,7 +5,7 @@ import { DigestService, resolveConfig } from './service.js';
 export default definePluginEntry({
   id: 'arxiv-daily',
   name: 'arXiv Daily',
-  description: 'Per-user Weixin arXiv subscriptions with deterministic commands and daily scheduling.',
+  description: 'Personal Weixin arXiv digest with deterministic commands and daily scheduling.',
   register(api) {
     let service;
     // Missing config is expected during installation/discovery. Hooks still fail closed.

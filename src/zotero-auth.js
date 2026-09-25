@@ -22,6 +22,10 @@ export function oauthHeader(method, url, app, {token = '', tokenSecret = '', ext
 }
 
 export function validateApp(app) {
+  if (app?.mode === 'personal') {
+    if (!/^[A-Za-z0-9+/]{43}=$/.test(app.encryptionKey || '') || Buffer.from(app.encryptionKey, 'base64').length !== 32) throw new Error('Invalid Zotero encryption key.');
+    return {mode:'personal',encryptionKey:app.encryptionKey};
+  }
   if (!app || !/^[A-Za-z0-9_-]{8,256}$/.test(app.clientKey || '') || !/^[A-Za-z0-9._~-]{8,256}$/.test(app.clientSecret || '')) {
     throw new Error('Invalid Zotero application credentials.');
   }

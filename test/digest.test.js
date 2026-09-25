@@ -12,7 +12,7 @@ import { createInboundHandler, agentGate, identity } from '../src/commands.js';
 import { DigestService, resolveConfig, localStamp, shouldSchedule } from '../src/service.js';
 
 const now = Date.parse('2026-09-25T00:00:00Z');
-const config = resolveConfig({allowedAccountIds: ['account-a', 'account-b']});
+const config = resolveConfig({personal:false, allowedAccountIds: ['account-a', 'account-b']});
 const window = previousDayWindow(now, config.timeZone);
 const fixtureReader = {get:async()=>({status:'ready',text:'Synthetic full paper body containing methods and conclusions. '.repeat(40),source:{format:'HTML',url:'https://arxiv.org/html/2609.12345v1',hash:'fixture'}})};
 const silent = {info(){}, warn(){}, error(){}};
@@ -216,7 +216,7 @@ test('same paper and language use one zero-tool host completion; a version/text 
   store.close();
 });
 
-test('50-user pilot cap is enforced independently of sender text', () => {
+test('legacy subscription cap is preserved during migration', () => {
   const store=new Store(':memory:'); for(let i=0;i<50;i++)add(store,'account-a',`peer${i}@im.wechat`);
   assert.throws(()=>add(store,'account-a','extra@im.wechat'),/名额/);
   assert.equal(store.subs().length,50); store.close();

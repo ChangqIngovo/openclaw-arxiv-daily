@@ -1,5 +1,12 @@
 # Contributing
 
+The current product is a personal installation on Windows or macOS. Keep the README short; detailed operational notes belong in DETAILS.md, MODEL_SETUP.md and ZOTERO.md.
+
+The installer binds one trusted local Weixin account and its authenticated peer. Both incoming commands and background digest/Zotero jobs must enforce that owner, including old queued work after an upgrade. Do not delete other legacy subscriptions to implement personal mode.
+
+Model provider entrances must use the host login flow and a discovered model catalog, never a fixed model name. Do not copy model credentials into plugin config.
+
+
 This is an experimental OpenClaw plugin. Small, focused fixes and documentation improvements are welcome.
 
 1. Use Node 24 and install the pinned dependencies with `npm ci --ignore-scripts --omit=dev --omit=peer`.
@@ -12,7 +19,7 @@ Preserve these behaviors:
 
 - Sender identity comes from trusted channel context. A command can only change its sender's subscription.
 - Zotero OAuth requests, grants, folders, jobs and reading snapshots belong to the same trusted account/peer subscriber key. Bind only the user's personal library, verify key permissions and user ID, and never accept recipient or library overrides from a message.
-- Keep OAuth client credentials and the encryption key outside the source tree; encrypt user grants with subscriber-bound authenticated encryption. Never include grants in model prompts, logs or response messages.
+- Keep personal Zotero API keys, legacy OAuth credentials and the encryption key outside the source tree; encrypt user grants with subscriber-bound authenticated encryption. Never include grants in model prompts, logs or response messages.
 - Zotero saves must use a received reading snapshot and version. This explicit bookmarking action can select an older delivered paper; it does not widen daily arXiv fetching or delivery dates.
 - Library writes must reconcile fixed create-only item keys after uncertain responses. Preserve existing metadata, notes and collection membership, and guard against disconnects between requests. PDF links are not uploaded PDF files.
 - Topic array order is the subscriber's priority order. Rank new papers per subscriber, before applying the one-paper test limit; never put personal ranks in the shared cache.

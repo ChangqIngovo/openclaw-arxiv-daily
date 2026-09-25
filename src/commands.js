@@ -1,6 +1,7 @@
 import { parseTopics, normalize } from './topics.js';
 import { subscriberKey } from './store.js';
 import { previousDayWindow } from './dates.js';
+import { isOwner } from './personal.js';
 
 export const CHANNEL = 'openclaw-weixin';
 export const HELP = [
@@ -34,8 +35,8 @@ const priorityList = topics => topics.map((topic, i) => `P${i + 1}：${topic}`).
 export function identity(event, context, config) {
   const account = context.accountId;
   const peer = context.senderId || event.senderId || context.conversationId;
-  if (event.isGroup || !account || !peer || !/^[^\s\x00-\x1f]{1,240}@im\.wechat$/u.test(peer)) throw new UserError('无法确认微信收件人，请联系管理员检查通道版本。');
-  if (!config.allowedAccountIds.includes(account)) throw new UserError('此微信连接尚未开通日报，请联系管理员加入账号。');
+  if (event.isGroup || !account || !peer || !/^[^\s\x00-\x1f]{1,240}@im\.wechat$/u.test(peer)) throw new UserError('无法确认微信收件人，请在电脑检查微信连接。');
+  if (!config.allowedAccountIds.includes(account)) throw new UserError('此微信连接尚未开通本机个人日报。请在自己的电脑安装个人版。');
   if (context.senderId && context.conversationId && context.senderId !== context.conversationId) throw new UserError('收件人信息不一致，本次未更改订阅。');
   return {account, peer, key: subscriberKey(account, peer)};
 }
@@ -43,6 +44,7 @@ export function identity(event, context, config) {
 export function runCommand(content, who, service) {
   const {store, config} = service;
   const now = service.clock();
+  if (!isOwner(config, who)) return '这个个人日报只接受本机绑定的微信账号指令。请在自己的电脑安装个人版。';
   const match = /^\/arxiv(?:\s+(\S+)(?:\s+([\s\S]*))?)?\s*$/i.exec(content.trim());
   if (!match) return null;
   const command = (match[1] || 'help').toLowerCase(), args = (match[2] || '').trim();
@@ -50,14 +52,14 @@ export function runCommand(content, who, service) {
   let sub = store.sub(who.key);
   if (command === 'subscribe') {
     const topics = parseTopics(args || config.defaultTopics);
-    sub = store.addSub({...who, topics, language: config.defaultLanguage}, now, config.maxSubscribers);
+    sub = store.addSub({...who, topics, language: config.defaultLanguage}, now, config.personal ? Number.MAX_SAFE_INTEGER : config.maxSubscribers);
     return `已${sub.created === now ? '建立' : '更新'}你的订阅。\n优先级（P1 最高）：\n${priorityList(sub.topics)}\n概括：${sub.language}\n每日 ${config.sendTime}（${config.timeZone}）开始。\n先发 /arxiv test 测试一篇；/arxiv help 查看指令。`;
   }
   if (!sub) return '你还没有订阅。发送：\n/arxiv subscribe 21cm, EoR, high redshift';
   store.patchSub(who.key, {last_inbound: now}, now);
   if (command === 'zotero' || command === 'save') return service.zotero?.ready
     ? service.zotero.command(who.key,command,args)
-    : '管理员尚未启用 Zotero 收藏；请联系管理员完成 Zotero 应用配置。';
+    : '还未配置 Zotero。请在电脑终端运行：node install-arxiv-daily.cjs --configure-zotero，然后在本机填写自己的个人 API key。';
   if (command === 'topics' || command === 'priority' && !args) return `你的方向优先级（P1 最高）：\n${priorityList(sub.topics)}`;
   if (command === 'priority') {
     const move = /^([1-9]\d*)\s+(.+)$/.exec(args);
@@ -146,7 +148,7 @@ export function createInboundHandler(getService, config, logger = console) {
     } catch (error) {
       if (error instanceof UserError || /方向|订阅名额/.test(error.message)) return {handled: true, text: error.message};
       logger.error('[arxiv-daily] Subscription command failed; agent dispatch suppressed.');
-      return {handled: true, text: '日报指令处理失败，请稍后重试或联系管理员；没有开启 AI 聊天。'};
+      return {handled: true, text: '日报指令处理失败，请稍后重试或在电脑检查服务状态；没有开启 AI 聊天。'};
     }
   };
 }

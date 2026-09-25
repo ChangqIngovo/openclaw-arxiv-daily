@@ -99,6 +99,13 @@ export class ZoteroApi {
     }
     return data;
   }
+  async identify(apiKey, signal) {
+    if (typeof apiKey !== 'string' || !/^[A-Za-z0-9._~-]{8,256}$/.test(apiKey)) throw new ZoteroError('个人 API key 格式无效。');
+    const {data} = await this.request(`${API}/keys/current`, {key:apiKey,signal});
+    const access = data?.access?.user;
+    if (!/^\d+$/.test(String(data?.userID)) || !access?.library || !access?.write || !access?.notes) throw new ZoteroError('个人 API key 需要文献库读取、笔记和写入权限。');
+    return {apiKey,userId:String(data.userID),username:String(data.username || data.userID)};
+  }
   prefix(grant) {
     if (!/^\d+$/.test(String(grant.userId))) throw new ZoteroError('Zotero 个人账号无效。');
     return `${API}/users/${grant.userId}`;

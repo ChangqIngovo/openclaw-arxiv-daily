@@ -1,12 +1,12 @@
 {
   "name": "openclaw-arxiv-daily",
-  "version": "0.4.0",
-  "description": "Deterministic per-user arXiv subscriptions for OpenClaw Weixin",
+  "version": "0.5.0",
+  "description": "Personal arXiv digest for OpenClaw Weixin on Windows and macOS",
   "type": "module",
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.16.0"
   },
   "openclaw": {
     "extensions": [

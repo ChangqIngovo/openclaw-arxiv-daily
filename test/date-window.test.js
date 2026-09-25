@@ -7,7 +7,7 @@ import { Store } from '../src/store.js';
 import { runCommand } from '../src/commands.js';
 
 const now = Date.parse('2026-09-25T00:00:00Z');
-const config = resolveConfig({allowedAccountIds:['fixture-account'], lookbackDays:7});
+const config = resolveConfig({personal:false, allowedAccountIds:['fixture-account'], lookbackDays:7});
 const window = previousDayWindow(now, config.timeZone);
 const silent = {info(){}, warn(){}, error(){}};
 const paper = (id, published, version = 1) => ({id,version,published,updated:now,

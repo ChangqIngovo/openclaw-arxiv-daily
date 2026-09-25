@@ -11,12 +11,12 @@ export const ZOTERO_HELP = [
   '/arxiv zotero status — 查看绑定及收藏结果',
   '/arxiv zotero disconnect — 解除本人的绑定',
 ].join('\n');
-const safeError = error => error instanceof ZoteroError ? error.message : 'Zotero 操作未能完成，请查看状态后重试；管理员可检查本地配置。';
+const safeError = error => error instanceof ZoteroError ? error.message : 'Zotero 操作未能完成，请查看状态后重试；可在电脑检查本地配置。';
 const credentialPart = value => /^[A-Za-z0-9._~-]{1,256}$/.test(value || '');
 
 export class ZoteroService {
-  constructor({store, app, allowedAccountIds, send, logger = console, clock = Date.now, fetchImpl, api}) {
-    Object.assign(this, {store, app, allowedAccountIds, send, logger, clock});
+  constructor({store, app, allowedAccountIds, ownerPeerId, send, logger = console, clock = Date.now, fetchImpl, api}) {
+    Object.assign(this, {store, app, allowedAccountIds, ownerPeerId, send, logger, clock});
     this.db = new ZoteroStore(store); this.vault = new CredentialVault(app.encryptionKey);
     this.api = api || new ZoteroApi({app,store,clock,fetchImpl});
     this.abort = new AbortController(); this.ready = false; this.work = null; this.current = null;
@@ -36,7 +36,7 @@ export class ZoteroService {
     if (this.work) await this.work;
   }
   cancelSubscriber(owner) { if (this.current?.owner === owner) this.current.controller.abort(); }
-  allowed(owner) { const sub = this.store.sub(owner); return sub && this.allowedAccountIds.includes(sub.account); }
+  allowed(owner) { const sub = this.store.sub(owner); return sub && this.allowedAccountIds.includes(sub.account) && (!this.ownerPeerId || sub.peer === this.ownerPeerId); }
   auth(owner) { const row = this.db.auth(owner); return row?.expires > this.clock() ? row : undefined; }
   active(job) {
     if (!this.allowed(job.subscriber)) return false;
@@ -58,6 +58,9 @@ export class ZoteroService {
         const parsed = /^(\S+)(?:\s+([\s\S]*))?$/.exec(args), action = (parsed?.[1] || 'help').toLowerCase(), value = (parsed?.[2] || '').trim();
         if (action === 'help') return ZOTERO_HELP;
         if (action === 'status') return this.status(owner);
+        if (['connect','finish'].includes(action) && this.app.mode === 'personal') return this.db.account(owner)
+          ? '你的个人 Zotero 已连接；/arxiv zotero folders 查看文件夹，/arxiv save 编号 收藏论文。'
+          : '请在自己的电脑终端运行：node install-arxiv-daily.cjs --configure-zotero，在本机填写个人 API key。无需注册应用或回调网页。';
         if (action === 'disconnect') {
           this.cancelSubscriber(owner); this.db.disconnect(owner, this.clock());
           return '已解除你的 Zotero 绑定并取消待处理操作；已发出的保存请求可能仍会完成。\n要撤销 Zotero 端的授权，可在 https://www.zotero.org/settings/keys 删除本应用的授权。';

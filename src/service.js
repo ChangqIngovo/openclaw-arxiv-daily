@@ -7,6 +7,7 @@ import { localStamp, previousDayWindow, inWindow, isCurrentWindow } from './date
 import { PaperReader } from './fulltext.js';
 import { loadApp } from './zotero-auth.js';
 import { ZoteroService } from './zotero-service.js';
+import { isOwner, personalIdentity } from './personal.js';
 
 export { localStamp } from './dates.js';
 
@@ -14,7 +15,7 @@ export function resolveConfig(input = {}) {
   const c = {
     agentId: 'arxiv_bot_v1', defaultTopics: ['21cm', 'EoR', 'high redshift'],
     defaultLanguage: 'zh', sendTime: '08:00', timeZone: 'Asia/Shanghai',
-    maxSubscribers: 50, maxResultsPerQuery: 2000, requestIntervalMs: 3200,
+    personal: true, maxSubscribers: 50, maxResultsPerQuery: 2000, requestIntervalMs: 3200,
     ...input,
     // Accept legacy configs, but never let a previous 7-day setting broaden this range.
     lookbackDays: 1,
@@ -24,6 +25,8 @@ export function resolveConfig(input = {}) {
   if (typeof c.zotero.enabled !== 'boolean' || c.zotero.credentialsFile != null && (typeof c.zotero.credentialsFile !== 'string' || !c.zotero.credentialsFile)) throw new Error('Invalid Zotero configuration.');
   c.allowedAccountIds = [...new Set(c.allowedAccountIds || [])];
   if (!c.allowedAccountIds.length || c.allowedAccountIds.some(v => typeof v !== 'string' || !v)) throw new Error('arxiv-daily requires allowedAccountIds.');
+  if (typeof c.personal !== 'boolean') throw new Error('Invalid personal mode.');
+  if (c.personal) { personalIdentity(c); c.maxSubscribers = 1; }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(c.sendTime)) throw new Error('Invalid sendTime.');
   new Intl.DateTimeFormat('en', {timeZone: c.timeZone}).format(new Date());
   if (!['zh', 'en', 'none'].includes(c.defaultLanguage)) throw new Error('Invalid defaultLanguage.');
@@ -44,11 +47,11 @@ function publicError(error) {
   const message = String(error?.message || error);
   if (/arXiv|方向过宽|概括|模型没有返回/.test(message)) return message.slice(0, 250);
   if (/ret=-2|context.?token|prepare failed/i.test(message)) return '微信拒绝主动发送。请先发一条 /arxiv status 刷新会话，再 /arxiv retry。';
-  if (/auth|oauth|credential|401|403|sign.?in|login/i.test(message)) return '模型或通道认证失败，请管理员检查登录；不会尝试其他 API 计费方式。';
-  if (/policy|override|permission|isolated|runtime|denied|unsupported|not allowed/i.test(message)) return 'OpenClaw 拒绝模型/插件运行，请管理员检查插件策略及版本。';
+  if (/auth|oauth|credential|401|403|sign.?in|login/i.test(message)) return '模型或通道认证失败，请在电脑检查登录；不会尝试其他 API 计费方式。';
+  if (/policy|override|permission|isolated|runtime|denied|unsupported|not allowed/i.test(message)) return 'OpenClaw 拒绝模型/插件运行，请在电脑检查插件策略及版本。';
   if (/quota|rate.?limit|429|usage.?limit/i.test(message)) return '服务额度或频率受限，稍后重试。';
   if (/abort|timeout|timed out/i.test(message)) return '操作中断或超时，请查看发送状态后重试。';
-  return '处理失败；请管理员查看 arxiv-daily 日志中的错误类别。';
+  return '处理失败；请查看本机 arxiv-daily 日志中的错误类别。';
 }
 
 // Only explicit provider rejections are safe automatic retry candidates.
@@ -74,6 +77,7 @@ export class DigestService {
       try {
         const app = loadApp(this.config.zotero.credentialsFile || join(this.stateDir,'arxiv-daily','zotero-app.json'));
         this.zotero = new ZoteroService({store:this.store,app,allowedAccountIds:this.config.allowedAccountIds,
+          ownerPeerId:this.config.personal ? this.config.ownerPeerId : undefined,
           send:this.send,logger:this.logger,clock:this.clock,fetchImpl:this.fetchImpl});
         this.zotero.start();
       } catch { this.logger.warn('[arxiv-daily] Zotero setup unavailable; check the local application credentials file. Digest remains available.'); }
@@ -103,7 +107,7 @@ export class DigestService {
   schedule() {
     const now = this.clock(), day = localStamp(now, this.config.timeZone).day;
     for (const sub of this.store.subs()) {
-      if (this.config.allowedAccountIds.includes(sub.account) && shouldSchedule(sub, now, this.config)) this.store.enqueue(sub.key, 'daily', now, day);
+      if (isOwner(this.config, sub) && shouldSchedule(sub, now, this.config)) this.store.enqueue(sub.key, 'daily', now, day);
     }
   }
   async tick() {
@@ -112,7 +116,7 @@ export class DigestService {
       await this.process(job);
     }
   }
-  allowed(sub) { return sub?.active && this.config.allowedAccountIds.includes(sub.account); }
+  allowed(sub) { return sub?.active && isOwner(this.config, sub); }
   async sendDelivery(key, paperId, expectedRevision, window = previousDayWindow(this.clock(), this.config.timeZone)) {
     let d = this.store.delivery(key, paperId);
     if (!d || d.status !== 'pending') return false;
