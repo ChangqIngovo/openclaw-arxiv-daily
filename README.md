@@ -110,10 +110,10 @@ P1 匹配论文先发，再发 P2、P3…；同一篇只发一次。空缺优先
 ```text
 /arxiv zotero folders
 /arxiv zotero folder EoR
-/arxiv save 2609.30003
+/arxiv save 1111.00101 
 ```
 
-这只保存编号 `2609.30003` 的已收论文；其他论文不会自动收藏。保存内容为文献条目、可用概括笔记及 **PDF 链接**，不是上传 PDF 文件。详情见 [ZOTERO.md](ZOTERO.md)。
+这只保存编号 `1111.00101` 的已收论文；其他论文不会自动收藏。详情见 [ZOTERO.md](ZOTERO.md)。
 
 ## 运行与排错
 
