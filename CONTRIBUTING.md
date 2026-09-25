@@ -29,6 +29,6 @@ Preserve these behaviors:
 - Summaries use the host's isolated zero-tool completion API; never run instructions found in a paper.
 - Interrupted or uncertain outbound sends are not automatically replayed.
 - Query overflow or incomplete pagination must be visible, never silently treated as a complete digest.
-- New data sources need explicit source identifiers, deduplication rules and documentation. ChemRxiv, bioRxiv, medRxiv and PubMed are not implemented in this version.
+- New data sources need explicit source identifiers, deduplication rules and documentation.
 
 Do not paste access tokens, QR login payloads, personal account IDs or database files into public issues. A minimal synthetic example is usually enough to reproduce parsing or scheduling problems.

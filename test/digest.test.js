@@ -103,7 +103,7 @@ test('numbered priorities move one owned topic, append new topics, reject invali
   assert.deepEqual(store.sub(key).topics,['21cm','high redshift','JWST','EoR']);
   command('/arxiv remove high redshift'); command('/arxiv add 21cm cosmology');
   const before=store.sub(key);
-  for(const text of ['/arxiv priority 0 EoR','/arxiv priority 4 EoR','/arxiv priority 1 protein folding','/arxiv priority 1 21cm, EoR']){
+  for(const text of ['/arxiv priority 0 EoR','/arxiv priority 4 EoR','/arxiv priority 1 quantum optics','/arxiv priority 1 21cm, EoR']){
     command(text); assert.deepEqual(store.sub(key).topics,before.topics); assert.equal(store.sub(key).revision,before.revision);
   }
   assert.match(command('/arxiv priority'),/P1：21cm\nP2：JWST\nP3：EoR/);
@@ -126,7 +126,7 @@ test('now and daily deliveries use each user priority before date, deduplicate c
     fixture('2609.20002','21-cm signal A',now-DAY),
     fixture('2609.20004','EoR forecast',now-9*3600000),
     fixture('2609.20005','JWST galaxies',now-8.5*3600000),
-    fixture('2609.20006','Protein folding',now-8.1*3600000),
+    fixture('2609.20006','Quantum optics',now-8.1*3600000),
   ],now);
   const originalOrder=store.papers(0).map(p=>p.id), sends=[];
   const service=new DigestService({config,stateDir:'.',store,logger:silent,clock:()=>now,send:async p=>{sends.push(p);return{messageId:`msg${sends.length}`};}});
@@ -146,7 +146,7 @@ test('now and daily deliveries use each user priority before date, deduplicate c
 });
 
 test('test selects the best available priority before limiting to one, skipping empty higher priorities', async () => {
-  const store=new Store(':memory:'), sub=add(store,'account-a','one@im.wechat',['protein folding','21cm','EoR']);
+  const store=new Store(':memory:'), sub=add(store,'account-a','one@im.wechat',['quantum optics','21cm','EoR']);
   store.patchSub(sub.key,{language:'none'},now);
   store.putPapers([
     {...paper,title:'21cm cosmology',abstract:'Synthetic fixture.',published:now-28*3600000},

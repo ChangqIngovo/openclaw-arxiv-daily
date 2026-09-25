@@ -59,7 +59,7 @@ test('personal owner is required, one account enforced, same-bot strangers canno
 
 test('migration retains old records/preferences but schedules and sends only to the selected owner', async t => {
   const store = new Store(':memory:'); t.after(() => store.close());
-  const other = store.addSub({account:'other',peer:'friend@im.wechat',topics:['protein folding'],language:'en'},now-86400000,50);
+  const other = store.addSub({account:'other',peer:'friend@im.wechat',topics:['quantum optics'],language:'en'},now-86400000,50);
   const sameBot = store.addSub({account:'mine',peer:'stranger@im.wechat',topics:['JWST'],language:'en'},now-86400000,50);
   const own = initializePersonal(store,config,now-86400000);
   store.patchSub(own.key,{topics:['EoR','21cm'],language:'en',active:false},now);
@@ -82,7 +82,7 @@ test('personal Zotero setup identifies the key owner, encrypts only that grant a
   const master = randomBytes(32).toString('base64');
   writePrivateJson(file,{clientKey:'fixture-client',clientSecret:'fixture-secret',callbackUrl:'https://example.org/callback',encryptionKey:master});
   const dbPath = join(dir,'arxiv-daily','state.sqlite'), store = new Store(dbPath);
-  const other = store.addSub({account:'old',peer:'old@im.wechat',topics:['biology'],language:'en'},now,50);
+  const other = store.addSub({account:'old',peer:'old@im.wechat',topics:['physics'],language:'en'},now,50);
   const vault = new CredentialVault(master), db = new ZoteroStore(store), oldCredential = vault.seal(other.key,{apiKey:'old-fixture-key',userId:'222'});
   db.bind(other.key,{userId:'222',username:'old',credential:oldCredential,generation:'old-generation'},now); store.close();
   const requests = [];

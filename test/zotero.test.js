@@ -26,7 +26,7 @@ const user = (store, number) => store.addSub({account:`account-${number}`,peer:`
 
 function remote() {
   const state = {calls:[],items:new Map(),requests:0,keys:new Map([['key-111','111'],['key-222','222']]),
-    folders:new Map([['111',[{key:'AAAAAAA2',data:{key:'AAAAAAA2',name:'EoR',parentCollection:false}}]],['222',[{key:'BBBBBBB2',data:{key:'BBBBBBB2',name:'Biology',parentCollection:false}}]]]),
+    folders:new Map([['111',[{key:'AAAAAAA2',data:{key:'AAAAAAA2',name:'EoR',parentCollection:false}}]],['222',[{key:'BBBBBBB2',data:{key:'BBBBBBB2',name:'Physics',parentCollection:false}}]]]),
     hooks:null, failWrite:false, partialOnce:false, timeoutAfterCreate:false, conflictOnce:false, revoked:false};
   const entries = uid => {if (!state.items.has(uid)) state.items.set(uid,new Map());return state.items.get(uid);};
   state.entries=entries;
@@ -84,7 +84,7 @@ function fixture(t, file=':memory:') {
     send:async message=>{messages.push(message);return{messageId:randomUUID()};}});
   service.ready=true;
   t.after(()=>{service.ready=false;store.close();});
-  const bind=(sub,uid,target={key:uid==='111'?'AAAAAAA2':'BBBBBBB2',label:uid==='111'?'EoR':'Biology'})=>{
+  const bind=(sub,uid,target={key:uid==='111'?'AAAAAAA2':'BBBBBBB2',label:uid==='111'?'EoR':'Physics'})=>{
     const grant={apiKey:`key-${uid}`,userId:uid,username:`user-${uid}`},generation=randomUUID();
     service.db.bind(sub.key,{...grant,generation,credential:service.vault.seal(sub.key,grant)},now);
     if(target)service.db.target(sub.key,generation,target,now);

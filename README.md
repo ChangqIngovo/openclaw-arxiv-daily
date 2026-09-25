@@ -95,11 +95,9 @@ P1 匹配论文先发，再发 P2、P3…；同一篇只发一次。空缺优先
 | --- | --- |
 | 天文 | `21cm cosmology, EoR, high redshift, JWST` |
 | 物理 | `quantum entanglement, superconductivity, magnetic reconnection` |
-| 化学 | `quantum chemistry, molecular dynamics, catalysis` |
 | 计算机 | `retrieval augmented generation, federated learning, computer vision` |
-| 生物 | `protein folding, gene regulation, population dynamics` |
 
-数据源目前只有 arXiv；化学和生物覆盖有限，尚未接入 ChemRxiv、bioRxiv、medRxiv 或 PubMed。
+数据源目前只有 arXiv。
 
 ## 只收藏感兴趣的论文
 
