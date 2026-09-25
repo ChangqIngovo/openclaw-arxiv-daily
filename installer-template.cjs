@@ -9,7 +9,7 @@ const crypto = require('node:crypto');
 const {spawnSync} = require('node:child_process');
 const {pathToFileURL} = require('node:url');
 const PAYLOAD = __ARXIV_PAYLOAD__;
-const VERSION = '0.5.1', HOST_VERSION = '2026.9.6', WEIXIN_VERSION = '2.4.8';
+const VERSION = '0.5.2', HOST_VERSION = '2026.9.6', WEIXIN_VERSION = '2.4.8';
 const args = process.argv.slice(2);
 const fail = message => { throw new Error(message); };
 const option = name => { const at = args.indexOf(name); return at < 0 ? undefined : args[at+1]; };
@@ -142,6 +142,10 @@ function startGateway(claw) {
   console.log('Starting Gateway. Readiness can take a few minutes.');
   claw(['gateway','start']); stoppedGateway = false;
 }
+function timeZoneForInstall(config = {}) {
+  // Migrate the old built-in default; preserve an explicitly different fixed zone.
+  return config.timeZone == null || config.timeZone === 'Asia/Shanghai' ? 'system' : config.timeZone;
+}
 async function main() {
   const accepted = new Set(['--prepare-only','--dir','--account','--agent','--upgrade','--configure-zotero','--configure-model','--status','--help']);
   for (let i = 0; i < args.length; i++) {
@@ -234,12 +238,12 @@ async function main() {
   let agent = agents.find(row => row.id === (option('--agent') || current?.config?.agentId || 'arxiv_bot_v1'));
   if (option('--agent') && !agent) fail('The requested agent does not exist.');
   if (!agent) agent = agents.length === 1 ? agents[0] : await choose('Choose the digest agent',agents.map(row => ({...row,label:row.id})),Math.max(0,agents.findIndex(row => row.isDefault)));
-  const configured = {defaultTopics:['21cm','EoR','high redshift'],defaultLanguage:'zh',sendTime:'08:00',timeZone:'Asia/Shanghai',...current?.config,
+  const configured = {defaultTopics:['21cm','EoR','high redshift'],defaultLanguage:'zh',sendTime:'08:00',...current?.config,timeZone:timeZoneForInstall(current?.config),
     personal:true,allowedAccountIds:[account.id],ownerPeerId:account.peer,agentId:agent.id,maxSubscribers:1,lookbackDays:1};
   if (!previousRoot) {
     configured.defaultTopics = (await question('Topics in priority order / 关键词按优先级，用逗号分隔',configured.defaultTopics.join(', '))).split(/[,，]/).map(value => value.trim()).filter(Boolean);
   }
-  console.log(`Personal connection: ${account.id}; agent: ${agent.id}; daily ${configured.sendTime} ${configured.timeZone}.`);
+  console.log(`Personal connection: ${account.id}; agent: ${agent.id}; daily ${configured.sendTime} ${configured.timeZone === 'system' ? 'computer local time (auto)' : configured.timeZone}.`);
   console.log('Previous other subscriptions stay on disk but will not run or receive this personal digest.');
   if (!previousRoot) installDependencies(host,npm);
   console.log('Stopping Gateway while source and personal settings are updated.');
@@ -278,7 +282,7 @@ function patchDryRun(claw,folder,config) {
   fs.writeFileSync(file,JSON.stringify({plugins:{entries:{'arxiv-daily':{config}}}}),{mode:0o600});
   claw(['config','patch','--file',file,'--dry-run']);
 }
-module.exports = {checkUpgrade,jsonOutput,findNodeEntry,readWeixinAccounts,samePath};
+module.exports = {checkUpgrade,jsonOutput,findNodeEntry,readWeixinAccounts,samePath,timeZoneForInstall};
 if (require.main === module) main().catch(error => {
   console.error(`\nSetup stopped: ${error.message}`);
   if (stoppedGateway && !gatewayStartAttempted) console.error('The Gateway is stopped. Resolve the error and rerun this installer; source/config updates were not bypassed.');

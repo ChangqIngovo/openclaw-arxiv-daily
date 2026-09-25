@@ -2,6 +2,7 @@ import { parseTopics, normalize } from './topics.js';
 import { subscriberKey } from './store.js';
 import { previousDayWindow } from './dates.js';
 import { isOwner } from './personal.js';
+import { effectiveTimeZone, timeZoneLabel } from './timezone.js';
 
 export const CHANNEL = 'openclaw-weixin';
 export const HELP = [
@@ -21,7 +22,7 @@ export const HELP = [
   '/arxiv retry uncertain — 核对手机后重试不确定的消息，可能重复',
   '/arxiv pause /arxiv resume — 暂停/恢复',
   '/arxiv unsubscribe — 删除本人的订阅和发送记录',
-  '默认北京时间 08:00 开始，逐篇发送。普通聊天不会调用模型。',
+  '默认跟随运行 OpenClaw 的电脑时区，每日当地时间 08:00 开始，逐篇发送。普通聊天不会调用模型。',
   '严格按首次提交日期筛选，不补发更早论文；读取不到正文时不生成概括。',
   '关键词从左到右为 P1、P2…；P1 最高。同一篇匹配多个方向只发一次，同级按日期从新到旧。',
 ].join('\n');
@@ -49,11 +50,14 @@ export function runCommand(content, who, service) {
   if (!match) return null;
   const command = (match[1] || 'help').toLowerCase(), args = (match[2] || '').trim();
   if (command === 'help') return HELP;
+  const needsTime = ['subscribe', 'status', 'retry', 'test', 'now'].includes(command);
+  const zone = needsTime ? effectiveTimeZone(config.timeZone) : null;
+  const zoneLabel = needsTime ? timeZoneLabel(config.timeZone) : null;
   let sub = store.sub(who.key);
   if (command === 'subscribe') {
     const topics = parseTopics(args || config.defaultTopics);
     sub = store.addSub({...who, topics, language: config.defaultLanguage}, now, config.personal ? Number.MAX_SAFE_INTEGER : config.maxSubscribers);
-    return `已${sub.created === now ? '建立' : '更新'}你的订阅。\n优先级（P1 最高）：\n${priorityList(sub.topics)}\n概括：${sub.language}\n每日 ${config.sendTime}（${config.timeZone}）开始。\n先发 /arxiv test 测试一篇；/arxiv help 查看指令。`;
+    return `已${sub.created === now ? '建立' : '更新'}你的订阅。\n优先级（P1 最高）：\n${priorityList(sub.topics)}\n概括：${sub.language}\n每日 ${config.sendTime} ${zoneLabel} 开始。\n先发 /arxiv test 测试一篇；/arxiv help 查看指令。`;
   }
   if (!sub) return '你还没有订阅。发送：\n/arxiv subscribe 21cm, EoR, high redshift';
   store.patchSub(who.key, {last_inbound: now}, now);
@@ -105,8 +109,8 @@ export function runCommand(content, who, service) {
     const counts = Object.fromEntries(store.deliveryCounts(who.key).map(r => [r.status, r.n]));
     return [
       `订阅：${sub.active ? '启用' : '暂停'}\n方向优先级（P1 最高）：\n${priorityList(sub.topics)}`,
-      `概括：${sub.language}；每日 ${config.sendTime} ${config.timeZone}`,
-      `本次范围：${previousDayWindow(now, config.timeZone).day} 00:00–24:00（${config.timeZone}）首次提交的论文；不补历史。`,
+      `概括：${sub.language}；每日 ${config.sendTime} ${zoneLabel}`,
+      `本次范围：${previousDayWindow(now, zone).day} 00:00–24:00（${zone}）首次提交的论文；不补历史。`,
       `最近任务：${run ? names[run.status] || run.status : '未运行'}${run ? `；已提交 ${run.sent}/${run.total} 篇` : ''}`,
       `累计：已提交 ${counts.submitted || 0}，失败 ${counts.failed || 0}，不确定 ${counts.unknown || 0}`,
       run?.error ? `原因：${run.error}` : '',
@@ -119,7 +123,7 @@ export function runCommand(content, who, service) {
     if (command === 'retry') {
       if (args && args !== 'uncertain') return '用 /arxiv retry；结果不确定的消息请先核对手机，再用 /arxiv retry uncertain。';
       if (store.latestRun(who.key)?.status === 'running') return '任务仍在运行，请稍后再重试。';
-      const changed = store.retry(who.key, args === 'uncertain', now, previousDayWindow(now, config.timeZone));
+      const changed = store.retry(who.key, args === 'uncertain', now, previousDayWindow(now, zone));
       if (!changed) return '当前前一日范围内没有可重试的消息；更早消息不会补发。抓取或概括失败请使用 /arxiv now。';
     }
     const queued = store.enqueue(who.key, command, now);
@@ -127,7 +131,7 @@ export function runCommand(content, who, service) {
     store.patchSub(who.key, {last_manual: now}, now);
     // The service's own timer picks this up within 30 seconds. Do not create
     // background model work inside a short-lived inbound hook/permission scope.
-    return command === 'test' ? `已加入试发队列：按你的优先级取 ${previousDayWindow(now, config.timeZone).day}（${config.timeZone}）首次提交且尚未发过的 1 篇；这篇之后不会重复日报推送。`
+    return command === 'test' ? `已加入试发队列：按你的优先级取 ${previousDayWindow(now, zone).day}（${zoneLabel}）首次提交且尚未发过的 1 篇；这篇之后不会重复日报推送。`
       : '已加入处理队列。需要几分钟；/arxiv status 可查看结果。';
   }
   return '未识别的日报指令。发送 /arxiv help 查看用法。';
@@ -146,7 +150,7 @@ export function createInboundHandler(getService, config, logger = console) {
       if (!service?.ready) return {handled: true, text: '日报服务还没有就绪，请稍后重试。'};
       return {handled: true, text: runCommand(content, who, service) || HELP};
     } catch (error) {
-      if (error instanceof UserError || /方向|订阅名额/.test(error.message)) return {handled: true, text: error.message};
+      if (error instanceof UserError || /方向|订阅名额|电脑时区/.test(error.message)) return {handled: true, text: error.message};
       logger.error('[arxiv-daily] Subscription command failed; agent dispatch suppressed.');
       return {handled: true, text: '日报指令处理失败，请稍后重试或在电脑检查服务状态；没有开启 AI 聊天。'};
     }

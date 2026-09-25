@@ -1,7 +1,7 @@
 {
   "id": "arxiv-daily",
   "name": "arXiv Daily",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Personal Weixin arXiv daily digest, user-selected models, and optional Zotero bookmarks.",
   "categories": [
     "research"
@@ -57,7 +57,8 @@
       },
       "timeZone": {
         "type": "string",
-        "default": "Asia/Shanghai"
+        "default": "system",
+        "description": "system follows the computer timezone, including changes while running; an explicit IANA timezone remains fixed."
       },
       "maxSubscribers": {
         "type": "integer",

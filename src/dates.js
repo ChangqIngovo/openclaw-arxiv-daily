@@ -1,7 +1,10 @@
+import { effectiveTimeZone, SYSTEM_TIME_ZONE } from './timezone.js';
+
 export const DAY = 86_400_000;
 const formatters = new Map(), windows = new Map();
 
-export function localStamp(now, timeZone) {
+export function localStamp(now, timeZone = SYSTEM_TIME_ZONE) {
+  timeZone = effectiveTimeZone(timeZone);
   if (!formatters.has(timeZone)) formatters.set(timeZone, new Intl.DateTimeFormat('en-CA', {
     timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }));
@@ -10,7 +13,7 @@ export function localStamp(now, timeZone) {
 }
 
 // Find the first instant of a civil date, including 23/25-hour DST days.
-// Date arithmetic in the host OS timezone would give the wrong Beijing window.
+// Use civil dates in the resolved zone, never subtract a fixed 24 hours locally.
 function startOfDay(day, timeZone) {
   const nominal = Date.parse(`${day}T00:00:00Z`);
   let low = nominal - 36 * 3_600_000, high = nominal + 36 * 3_600_000;
@@ -22,7 +25,8 @@ function startOfDay(day, timeZone) {
   return low;
 }
 
-export function previousDayWindow(now, timeZone = 'Asia/Shanghai') {
+export function previousDayWindow(now, timeZone = SYSTEM_TIME_ZONE) {
+  timeZone = effectiveTimeZone(timeZone);
   const today = localStamp(now, timeZone).day;
   const cached = windows.get(timeZone);
   if (cached?.today === today) return cached;
@@ -33,4 +37,5 @@ export function previousDayWindow(now, timeZone = 'Asia/Shanghai') {
 }
 
 export const inWindow = (paper, window) => Boolean(paper && paper.published >= window.since && paper.published < window.until);
-export const isCurrentWindow = (window, now) => localStamp(now, window.timeZone).day === window.today;
+export const isCurrentWindow = (window, now, setting = window.timeZone) =>
+  effectiveTimeZone(setting) === window.timeZone && localStamp(now, window.timeZone).day === window.today;

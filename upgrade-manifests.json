@@ -238,5 +238,80 @@
     "test/zotero.test.js": "f876f2018c2583d0f4aa5240864c38aec6c59eb95f15a097c47df4c5aa7ed47c",
     "upgrade-manifests.json": "00bf6d7667d45a6ec2c1a5cfc46d37b5062fe2a03b71f6f3e86a0ea67c492161",
     "zotero-callback.html": "72a48ac242844624c04c2345533d0a267a5f939113b9f37c234910b8b6e657c4"
+  },
+  "0.5.1": {
+    ".gitattributes": "93699a1108fd9da226b06f84ee12e317f4ea4d2f18a8fd05260443fd1bf2faef",
+    ".gitignore": "af2c455afe976a67c17e0deb331a033b93809008765aea4e00a136cb4df03e5e",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "CONTRIBUTING.md": "e9ab4a41f753ced7c1151640df6e77f0805cc0cde3230a9c160a9bc21a646c4c",
+    "DETAILS.md": "6038d4a39829b3bbcf975dc26d6a0a2c33c7d6a7d2ab45fee3f66bbbf73db584",
+    "LICENSE": "a5905566c9667e850d1e331590bcf188c6c3dd988b0ee8a5c11928ebc412e80b",
+    "MODEL_SETUP.md": "715519b2b7d90309935f11b8a63c3c1739f49b23d2feeb6824c70cf327b87c8b",
+    "README.md": "13e0285b48dd5bfec14922b0cb10208189c14f7c35eb9a92a6ffc241e0528a9c",
+    "ZOTERO.md": "a0ca520c309804533a8d54a111e5e441f0084b07d44da2ece0d4f2b337ecb2b3",
+    "config.example.json": "673354e6c975312689685d6131a321c2d65ef0b69c9174885b4a83156e7f4198",
+    "configure-zotero.ps1": "fc65cdd7cbe229ee64e10c3ab671f3981d4bb3e070c549239e8df2e318e8f8d4",
+    "install.ps1": "7f8d1549a27f762fc2c9c2f8b98fb73d5fa6b4636e08b708eaa743efa444f5e1",
+    "install.sh": "585bbf506ab02362b6d6b824a682127e70aadd37eadae34334eb00b80715193b",
+    "installer-template.cjs": "5b496c8633db0322aa437082764ab2e563250908a056eb1fab8e5297ba8a5cdf",
+    "openclaw.plugin.json": "4f93f3fa28d5d59a875fd46f24e16c041be5702dd8e7c49629fffbaee60465c6",
+    "package-lock.json": "dc6ee5a0a899dc19bcac27096cc62fb94b04c937e78e2610f4e5afba7541e691",
+    "package.json": "7a865a2c8b1d2dc89973c4286380d9a9a631e2c50607ee71ed4f8f02684e80f0",
+    "scripts/build-installer.mjs": "680c6baa455a78f60eb91454624a56ea294a9ba40884d30f192fbf162aa8b4c6",
+    "src/arxiv.js": "496a1c9785a5f66cc2276ce6e01771317287cc2b0288ffdbd84e5a7dcdfed989",
+    "src/commands.js": "b719dca368dd34254ee4c9f3d8ded674e84c65088fcafc508328ca9c48cabc18",
+    "src/dates.js": "7107c0f7b28a80b0b2f8038838bc48199d4c526f7b10c8b6b628a848bb8bd393",
+    "src/fulltext.js": "afd5959cf3430a83452d0a656e2d303de7516aececb94027681d0d30f0a01de4",
+    "src/index.js": "b81d46bc87d4e0076c9516c1d6675aed5ab41c6e174e6720ab634b0a2658c8bb",
+    "src/pdf-resources.js": "d2332568f2ad341b90dbf4d3da47b7e76689d1b7c11a46256dc6c5019adf4298",
+    "src/pdf-worker.js": "77f88f81b814b763077ce8e23e2a30bb44a170b783343fe5b71961ec22f9cafc",
+    "src/personal-setup.js": "2a1edd8a05cb3575fdaf35c84b2408a208c75ef2b5ad05276f3120cea679fd70",
+    "src/personal.js": "4b4e9de59938a1c639fb1f56d2f5e5d3216b75945e46b87749f8c518fa8a024d",
+    "src/service.js": "958e2e8ede16aeac8a549b44411398946f965e5504503ab798fac499ba102703",
+    "src/setup-model.js": "5caca63646ade6f3528eecaa9ed28054c04418751179224d36d7891cb1cf9485",
+    "src/setup-ui.js": "0e7f5d598df0be783c1fbe5a4e3c4075dada38e327d49d1290f3ab2bf837a4c9",
+    "src/store.js": "20ae771ab6c1a3a8852798f5a0e63d9856a334953fae765b18a8ce2bc3a3f781",
+    "src/summary.js": "be78f0f77135bcc4b57f5a73a927667964803dd4a0c3c140cb001ae5ff809511",
+    "src/topics.js": "53f289dc102e450f729fb6ea6ede1c7600e41fccef8ba1826d6e03a5d813584d",
+    "src/zotero-api.js": "8e7d1a5d724febb21bd3c04ef8e88d42c8556fc7d64913ffa944e7b398212a74",
+    "src/zotero-auth.js": "4a68d148173ce07eac4ca78d8c1dcc2a9f6170d4cfdaba8bd699a9af604cc27e",
+    "src/zotero-callback.js": "1dc83bc76bc653bfe8fb54519e67173e401cd63b92b17015c10f02d6fe6f779e",
+    "src/zotero-library.js": "422443d8b079cc92dab7b4f229e840a61ca19113784ede853eb04df2601e7ec2",
+    "src/zotero-service.js": "6a9ccb70e04eaa4815cded235ada3ad6d39b176c3a2e67f28d6320417016001e",
+    "src/zotero-setup-check.js": "92e5a5b3b66dcf058b69635a1e005e362c8efb129125ec93b922f26502d11870",
+    "src/zotero-store.js": "23978c73cdf720ca6463d2598cbf7900fedfc70cfb99745be692bd2701f8ab74",
+    "test/date-window.test.js": "abe07aeb5a35b516e1da5818df29e2bf543d7a844de1d5aad4024f07a2e6a82e",
+    "test/digest.test.js": "3d6236f2fb5e2c81eb0b1350269a963f6c456c75d3e3d1a20a0e8f69d5d4172f",
+    "test/fulltext.test.js": "7104a40b1f2c6de54796b075c07c3819db301256e51ff85578771a616e2c7ff4",
+    "test/personal.test.js": "e5a6ceadd449b5b976f7171db835e38c98639f37ec8ae91309b031e72b2569ae",
+    "test/upgrade.test.js": "eb4ad67ef06acf4b5a51b4502ca8836b805e28d3abcd45118f3f725f34c5eead",
+    "test/zotero.test.js": "f876f2018c2583d0f4aa5240864c38aec6c59eb95f15a097c47df4c5aa7ed47c",
+    "upgrade-manifests.json": "c873990b3e97c801574f342a56292cda0a5958a75e5434a394cce80575f52433",
+    "zotero-callback.html": "72a48ac242844624c04c2345533d0a267a5f939113b9f37c234910b8b6e657c4"
+  },
+  "0.5.1-source-9f4f431": {
+    "README.md": "332e01bf6b117766a3db612ac08e8a15a40e8e3f4091830c1fdaf0cd925ea088"
+  },
+  "0.5.1-source-f26932a": {
+    "README.md": "6dc85a7906e9357571fea6b63eebe263ef36997f0884cccbbc6a74c35c079876"
+  },
+  "0.5.1-source-5c8b2df": {
+    "README.md": "9f1f12783951d020e8ccbcba5e09118126609fdb5f6cdaf47929dedb2d6a182b"
+  },
+  "0.5.1-source-cd4a10d": {
+    "CONTRIBUTING.md": "9c75e72324b8eab208a7f22acf73ef63f2ea0b1b71b1b772133dcd2ff98a5c55",
+    "README.md": "dbcaa78ad1e0c4d4c7242f8ccd7a6648f479a33cf898b3d7657a1a00c58ff64a",
+    "test/digest.test.js": "5d3c778312534e06261ae3118330d46a4e3f608c602760ea134043d12e24bf5f",
+    "test/personal.test.js": "94f01cea3b28a52e04567d20bba544163ab161c43bfaa6ada7f0378399973b86",
+    "test/zotero.test.js": "d2c139ab0242696013b3e34aecc2feaa1f31ccebc4f1c9e66d52827aa10691b2"
+  },
+  "0.5.1-source-47325af": {
+    "README.md": "29fe1b54b726c955cf048e3b62ab5f40050d7e73ea5980f0d1f63c92ab213022"
+  },
+  "0.5.1-source-b5d79d3": {
+    "README.md": "6cbf3070da03fdb76a6cc86352dde2d987d44b43b4fe8e7848f8fddddd9e1700"
+  },
+  "0.5.1-source-b73b3b2": {
+    "DETAILS.md": "c210822109cc5be579a886985f2683cbc7692e370b8fccdd00ccaa80fa2e56a2"
   }
 }

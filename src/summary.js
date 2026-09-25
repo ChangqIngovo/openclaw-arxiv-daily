@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { localStamp } from './dates.js';
+import { effectiveTimeZone, SYSTEM_TIME_ZONE } from './timezone.js';
 
 export const SUMMARY_VERSION = 'full-body-four-fields-v1';
 const FIELDS = ['gap', 'work', 'method', 'conclusion'];
@@ -116,7 +117,8 @@ export class Summarizer {
   }
 }
 
-export function formatPaper(paper, summary, language, matched, number, total, priority, timeZone = 'Asia/Shanghai') {
+export function formatPaper(paper, summary, language, matched, number, total, priority, timeZone = SYSTEM_TIME_ZONE) {
+  timeZone = effectiveTimeZone(timeZone);
   const date = localStamp(paper.published, timeZone).day;
   const rank = priority ? `\n优先级：P${priority} · ${matched[0]}` : '';
   const head = `arXiv 日报 · ${number}/${total}${rank}\n${paper.title}\narXiv:${paper.id}v${paper.version} · 首次提交 ${date} ${timeZone}\n匹配方向：${matched.join('、')}`;

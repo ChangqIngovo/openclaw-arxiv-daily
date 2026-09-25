@@ -7,7 +7,7 @@ import { Store } from '../src/store.js';
 import { runCommand } from '../src/commands.js';
 
 const now = Date.parse('2026-09-25T00:00:00Z');
-const config = resolveConfig({personal:false, allowedAccountIds:['fixture-account'], lookbackDays:7});
+const config = resolveConfig({personal:false, allowedAccountIds:['fixture-account'], lookbackDays:7, timeZone:'Asia/Shanghai'});
 const window = previousDayWindow(now, config.timeZone);
 const silent = {info(){}, warn(){}, error(){}};
 const paper = (id, published, version = 1) => ({id,version,published,updated:now,
@@ -26,8 +26,8 @@ test('previous civil day has exact Beijing bounds, survives month/year boundarie
   assert.equal(window.day,'2026-09-24');
   assert.equal(window.since,Date.parse('2026-09-23T16:00:00Z'));
   assert.equal(window.until,Date.parse('2026-09-24T16:00:00Z'));
-  assert.equal(previousDayWindow(Date.parse('2027-01-01T00:00Z')).day,'2026-12-31');
-  assert.equal(previousDayWindow(Date.parse('2028-03-01T00:00Z')).day,'2028-02-29');
+  assert.equal(previousDayWindow(Date.parse('2027-01-01T00:00Z'),config.timeZone).day,'2026-12-31');
+  assert.equal(previousDayWindow(Date.parse('2028-03-01T00:00Z'),config.timeZone).day,'2028-02-29');
   const spring = previousDayWindow(Date.parse('2026-03-09T12:00Z'),'America/New_York');
   const autumn = previousDayWindow(Date.parse('2026-11-02T12:00Z'),'America/New_York');
   assert.equal(spring.until-spring.since,23*3600000);

@@ -20,7 +20,7 @@ import { configureModel, availableModels, PROVIDERS } from '../src/setup-model.j
 import { question } from '../src/setup-ui.js';
 
 const now = Date.parse('2026-09-25T00:00:00Z');
-const config = resolveConfig({allowedAccountIds:['mine'],ownerPeerId:'owner@im.wechat'});
+const config = resolveConfig({allowedAccountIds:['mine'],ownerPeerId:'owner@im.wechat',timeZone:'Asia/Shanghai'});
 const quiet = {info(){},warn(){},error(){}};
 const context = (account = 'mine',peer = 'owner@im.wechat') => ({channelId:'openclaw-weixin',accountId:account,conversationId:peer});
 function temporary(t) { const dir = mkdtempSync(join(tmpdir(),'arxiv-personal-')); t.after(() => rmSync(dir,{recursive:true,force:true})); return dir; }

@@ -12,7 +12,7 @@ import { createInboundHandler, agentGate, identity } from '../src/commands.js';
 import { DigestService, resolveConfig, localStamp, shouldSchedule } from '../src/service.js';
 
 const now = Date.parse('2026-09-25T00:00:00Z');
-const config = resolveConfig({personal:false, allowedAccountIds: ['account-a', 'account-b']});
+const config = resolveConfig({personal:false, allowedAccountIds: ['account-a', 'account-b'], timeZone:'Asia/Shanghai'});
 const window = previousDayWindow(now, config.timeZone);
 const fixtureReader = {get:async()=>({status:'ready',text:'Synthetic full paper body containing methods and conclusions. '.repeat(40),source:{format:'HTML',url:'https://arxiv.org/html/2609.12345v1',hash:'fixture'}})};
 const silent = {info(){}, warn(){}, error(){}};
@@ -180,7 +180,7 @@ test('arXiv fetch is paginated, rate-limited and cached across users; broad resu
   await assert.rejects(broad.refresh(['JWST']), /方向过宽/); store.close();
 });
 
-test('00:00 UTC is 08:00 Shanghai regardless of local OS timezone; late new subscriptions start tomorrow', () => {
+test('an explicitly fixed Shanghai zone is independent of the OS; late new subscriptions start tomorrow', () => {
   const sub = {active:true,created:now-DAY};
   assert.deepEqual(localStamp(now,'Asia/Shanghai'), {day:'2026-09-25',time:'08:00'});
   assert.equal(shouldSchedule(sub,now-1000,config),false);

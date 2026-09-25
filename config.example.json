@@ -17,7 +17,7 @@
           ],
           "defaultLanguage": "zh",
           "sendTime": "08:00",
-          "timeZone": "Asia/Shanghai",
+          "timeZone": "system",
           "maxSubscribers": 1,
           "lookbackDays": 1,
           "maxResultsPerQuery": 2000,
