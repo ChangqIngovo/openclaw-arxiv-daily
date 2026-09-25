@@ -1,3 +1,5 @@
+import { categoryCode } from './categories.js';
+
 const groups = [
   { name: '21cm', aliases: ['21cm', '21 cm', '21-cm', '21 centimeter', '21 centimetre', '21 centimeter line', '21 centimetre line', '21cm cosmology', '21 cm cosmology', '21-cm cosmology'], search: ['21cm', '21 cm', '21-cm', '21 centimeter', '21 centimetre'] },
   { name: 'EoR', aliases: ['eor', 'epoch of reionization', 'epoch of reionisation', 'reionization', 'reionisation'], search: ['EoR', 'reionization', 'reionisation'] },
@@ -7,18 +9,34 @@ const groups = [
 export const normalize = value => String(value).normalize('NFKC').toLowerCase()
   .replace(/[‐‑‒–—−]/g, '-').replace(/\s+/g, ' ').trim();
 
+// Used for new subscriptions and older stored spellings, including category aliases.
+const categoryForTopic = topic => categoryCode(normalize(topic).replace(/^cat\s*:\s*/i, ''));
+export const topicKey = topic => normalize(categoryForTopic(topic) || topic);
+
+function parseTopic(part) {
+  const text = String(part).normalize('NFKC').trim().replace(/\s+/g, ' ');
+  if (!text) return null;
+  if (text.length > 70) throw new Error('方向最多 70 字；多个关键词或分类代码用逗号分隔。');
+  const category = categoryForTopic(text);
+  if (category) return category;
+  // Reject misspelled category selectors instead of silently searching them as text.
+  if (/^cat\s*:/i.test(text) || /^(?:astro-ph|cond-mat|cs|econ|eess|math|nlin|physics|q-bio|q-fin|stat)\./i.test(normalize(text))
+      || /^(?:hep|nucl)-[a-z-]+$/i.test(text)) {
+    throw new Error('未识别的 arXiv 分类代码。请使用具体分类，如 astro-ph.CO、cs.AI、quant-ph；分类表：https://arxiv.org/category_taxonomy');
+  }
+  if (!/^[\p{L}\p{N}\s.\-+/#]+$/u.test(text)) {
+    throw new Error('方向请用普通关键词或 arXiv 分类代码，最多 70 字；多个方向用逗号分隔，不支持通配符或布尔查询语法。');
+  }
+  const group = groups.find(g => g.aliases.includes(normalize(text)));
+  return group ? group.name : text;
+}
+
 export function parseTopics(raw) {
   const parts = Array.isArray(raw) ? raw : String(raw).split(/[,，;；\n]/u);
   const result = [];
   for (const part of parts) {
-    const text = String(part).normalize('NFKC').trim().replace(/\s+/g, ' ');
-    if (!text) continue;
-    if (text.length > 70 || !/^[\p{L}\p{N}\s.\-+/#]+$/u.test(text)) {
-      throw new Error('方向请用普通关键词，最多 70 字；多个方向用逗号分隔，不要输入查询语法。');
-    }
-    const group = groups.find(g => g.aliases.includes(normalize(text)));
-    const canonical = group ? group.name : text;
-    if (!result.some(t => normalize(t) === normalize(canonical))) result.push(canonical);
+    const canonical = parseTopic(part);
+    if (canonical && !result.some(t => topicKey(t) === topicKey(canonical))) result.push(canonical);
   }
   if (!result.length || result.length > 12) throw new Error('请提供 1–12 个方向，用逗号分隔。');
   return result;
@@ -31,6 +49,11 @@ export function searchTerms(topic) {
 function escapeRegex(text) { return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 export function matchesTopic(paper, topic) {
+  const category = categoryForTopic(topic);
+  if (category) {
+    const listed = Array.isArray(paper.categories) ? paper.categories : [];
+    return [...listed, paper.primaryCategory].some(value => categoryCode(value) === category);
+  }
   const source = normalize(`${paper.title} ${paper.abstract}`)
     .replace(/\\(?:mathrm|textrm|text|operatorname)\{([^}]+)\}/g, '$1')
     .replace(/\$|[{}]/g, '').replace(/\\[,;!]|~/g, ' ');
@@ -54,8 +77,11 @@ export function rankPapers(papers, topics) {
 }
 
 export function buildQuery(topics, since, until) {
-  const terms = [...new Set(topics.flatMap(searchTerms))];
-  const fields = terms.map(t => `(ti:"${t}" OR abs:"${t}")`).join(' OR ');
+  const clauses = parseTopicsUnion(topics).flatMap(topic => {
+    const category = categoryForTopic(topic);
+    return category ? [`cat:${category}`] : searchTerms(topic).map(term => `(ti:"${term}" OR abs:"${term}")`);
+  });
+  const fields = [...new Set(clauses)].join(' OR ');
   const stamp = ms => new Date(ms).toISOString().slice(0, 16).replace(/[-T:]/g, '');
   return `(${fields}) AND submittedDate:[${stamp(since)} TO ${stamp(until)}]`;
 }
@@ -73,6 +99,7 @@ export function topicBatches(topics) {
 
 function parseTopicsUnion(topics) {
   const seen = new Set();
-  return topics.filter(t => { const key = normalize(t); if (seen.has(key)) return false; seen.add(key); return true; })
+  return topics.map(parseTopic).filter(Boolean)
+    .filter(t => { const key = topicKey(t); if (seen.has(key)) return false; seen.add(key); return true; })
     .sort((a, b) => normalize(a).localeCompare(normalize(b)));
 }

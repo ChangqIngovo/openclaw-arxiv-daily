@@ -9,7 +9,7 @@ const crypto = require('node:crypto');
 const {spawnSync} = require('node:child_process');
 const {pathToFileURL} = require('node:url');
 const PAYLOAD = __ARXIV_PAYLOAD__;
-const VERSION = '0.5.2', HOST_VERSION = '2026.9.6', WEIXIN_VERSION = '2.4.8';
+const VERSION = '0.5.3', HOST_VERSION = '2026.9.6', WEIXIN_VERSION = '2.4.8';
 const args = process.argv.slice(2);
 const fail = message => { throw new Error(message); };
 const option = name => { const at = args.indexOf(name); return at < 0 ? undefined : args[at+1]; };
@@ -241,7 +241,7 @@ async function main() {
   const configured = {defaultTopics:['21cm','EoR','high redshift'],defaultLanguage:'zh',sendTime:'08:00',...current?.config,timeZone:timeZoneForInstall(current?.config),
     personal:true,allowedAccountIds:[account.id],ownerPeerId:account.peer,agentId:agent.id,maxSubscribers:1,lookbackDays:1};
   if (!previousRoot) {
-    configured.defaultTopics = (await question('Topics in priority order / 关键词按优先级，用逗号分隔',configured.defaultTopics.join(', '))).split(/[,，]/).map(value => value.trim()).filter(Boolean);
+    configured.defaultTopics = (await question('Topics in priority order / 关键词或分类代码按优先级，用逗号分隔',configured.defaultTopics.join(', '))).split(/[,，]/).map(value => value.trim()).filter(Boolean);
   }
   console.log(`Personal connection: ${account.id}; agent: ${agent.id}; daily ${configured.sendTime} ${configured.timeZone === 'system' ? 'computer local time (auto)' : configured.timeZone}.`);
   console.log('Previous other subscriptions stay on disk but will not run or receive this personal digest.');

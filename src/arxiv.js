@@ -22,12 +22,15 @@ export function parseFeed(xml) {
     const rawId = plain(entry.id);
     const m = /^https?:\/\/(?:export\.)?arxiv\.org\/abs\/(\d{4}\.\d{4,5}|[a-z.-]+\/\d{7})(?:v(\d+))?$/i.exec(rawId);
     if (!m) throw new Error('arXiv 返回错误条目或未知论文编号。');
+    const primaryCategory = entry.primary_category?.['@_term'];
     const p = {
       id: m[1], version: Number(m[2] ?? 1), title: plain(entry.title),
       // Only normalize XML layout whitespace; no translation, truncation, or paraphrase.
       abstract: plain(entry.summary), authors: array(entry.author).map(a => plain(a.name)),
       published: Date.parse(plain(entry.published)), updated: Date.parse(plain(entry.updated)),
-      categories: array(entry.category).map(c => c['@_term']).filter(Boolean),
+      categories: [...new Set([...array(entry.category).map(c => c['@_term']), primaryCategory]
+        .filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()))],
+      ...(typeof primaryCategory === 'string' && primaryCategory.trim() ? {primaryCategory:primaryCategory.trim()} : {}),
       url: `https://arxiv.org/abs/${m[1]}`, pdf: `https://arxiv.org/pdf/${m[1]}`,
     };
     if (!p.title || !p.abstract || !Number.isFinite(p.published) || !Number.isFinite(p.updated)) throw new Error('arXiv 条目缺少摘要或日期。');
@@ -61,7 +64,7 @@ export class ArxivClient {
         const url = new URL('https://export.arxiv.org/api/query');
         url.search = new URLSearchParams({ search_query: query, start: String(start), max_results: '100', sortBy: 'submittedDate', sortOrder: 'descending' }).toString();
         const requestSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(45_000)]) : AbortSignal.timeout(45_000);
-        const response = await this.fetchImpl(url, { signal: requestSignal, headers: { Accept: 'application/atom+xml', 'User-Agent': 'openclaw-arxiv-daily/0.5.2 (OpenClaw literature digest)' } });
+        const response = await this.fetchImpl(url, { signal: requestSignal, headers: { Accept: 'application/atom+xml', 'User-Agent': 'openclaw-arxiv-daily/0.5.3 (OpenClaw literature digest)' } });
         if (!response.ok) throw new Error(`arXiv HTTP ${response.status}，稍后用 /arxiv now 重试。`);
         const declared = Number(response.headers?.get('content-length') ?? 0);
         if (declared > 8_000_000) throw new Error('arXiv 响应过大。');

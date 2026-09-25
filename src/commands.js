@@ -1,4 +1,4 @@
-import { parseTopics, normalize } from './topics.js';
+import { parseTopics, topicKey } from './topics.js';
 import { subscriberKey } from './store.js';
 import { previousDayWindow } from './dates.js';
 import { isOwner } from './personal.js';
@@ -8,6 +8,7 @@ export const CHANNEL = 'openclaw-weixin';
 export const HELP = [
   'arXiv 日报指令（只影响你自己的订阅）',
   '/arxiv subscribe 21cm cosmology, EoR, high redshift, JWST — 按优先级订阅/替换方向',
+  '/arxiv subscribe 21cm cosmology, astro-ph.CO, cs.AI — 关键词和分类代码可混排，也支持 cat:astro-ph.CO',
   '/arxiv priority 1 21cm cosmology — 把已有方向移到第 1 位，其余顺移',
   '/arxiv add JWST — 在优先级末尾增加方向',
   '/arxiv remove high redshift — 移除方向',
@@ -24,7 +25,7 @@ export const HELP = [
   '/arxiv unsubscribe — 删除本人的订阅和发送记录',
   '默认跟随运行 OpenClaw 的电脑时区，每日当地时间 08:00 开始，逐篇发送。普通聊天不会调用模型。',
   '严格按首次提交日期筛选，不补发更早论文；读取不到正文时不生成概括。',
-  '关键词从左到右为 P1、P2…；P1 最高。同一篇匹配多个方向只发一次，同级按日期从新到旧。',
+  '关键词或分类代码从左到右为 P1、P2…；P1 最高。分类含交叉分类，方向之间是“或”；同一篇只发一次，同级按日期从新到旧。',
 ].join('\n');
 
 export class UserError extends Error {}
@@ -72,7 +73,7 @@ export function runCommand(content, who, service) {
     if (!Number.isSafeInteger(position) || position > sub.topics.length) return `优先级序号须为 1–${sub.topics.length}；本次未更改。`;
     const requested = parseTopics(move[2]);
     if (requested.length !== 1) return '每次只移动一个方向，例如 /arxiv priority 1 21cm cosmology。';
-    const index = sub.topics.findIndex(t => normalize(t) === normalize(requested[0]));
+    const index = sub.topics.findIndex(t => topicKey(t) === topicKey(requested[0]));
     if (index < 0) return '该方向尚未订阅，请先用 /arxiv add 添加，再调整优先级。';
     if (index === position - 1) return `顺序无需改变：\n${priorityList(sub.topics)}`;
     const topics = [...sub.topics];
@@ -84,7 +85,7 @@ export function runCommand(content, who, service) {
   if (command === 'add' || command === 'remove') {
     const requested = parseTopics(args);
     const topics = command === 'add' ? parseTopics([...sub.topics, ...requested])
-      : sub.topics.filter(t => !requested.some(r => normalize(r) === normalize(t)));
+      : sub.topics.filter(t => !requested.some(r => topicKey(r) === topicKey(t)));
     if (!topics.length) return '不能移除最后一个方向；暂停推送请发送 /arxiv pause。';
     store.patchSub(who.key, {topics}, now);
     return `已更新你的方向优先级（P1 最高）：\n${priorityList(topics)}\n未来的推送使用新顺序；正在发送的一条可能已经提交。`;
@@ -150,7 +151,7 @@ export function createInboundHandler(getService, config, logger = console) {
       if (!service?.ready) return {handled: true, text: '日报服务还没有就绪，请稍后重试。'};
       return {handled: true, text: runCommand(content, who, service) || HELP};
     } catch (error) {
-      if (error instanceof UserError || /方向|订阅名额|电脑时区/.test(error.message)) return {handled: true, text: error.message};
+      if (error instanceof UserError || /方向|分类代码|订阅名额|电脑时区/.test(error.message)) return {handled: true, text: error.message};
       logger.error('[arxiv-daily] Subscription command failed; agent dispatch suppressed.');
       return {handled: true, text: '日报指令处理失败，请稍后重试或在电脑检查服务状态；没有开启 AI 聊天。'};
     }
