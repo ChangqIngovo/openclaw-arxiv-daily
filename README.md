@@ -89,9 +89,9 @@ node "$HOME/install-arxiv-daily.cjs" --configure-model
 | `/arxiv unsubscribe` | 删除自己的订阅、发送记录和收藏绑定 |
 | `/arxiv help` | 完整帮助 |
 
-P1 匹配论文先发，再发 P2、P3…；同一篇只发一次。空缺优先级跳过，不用旧论文补位。`21cm cosmology` 是 `21cm` 的别名。
+P1 匹配论文先发，再发 P2、P3…；同一篇只发一次。空缺优先级跳过，不用旧论文补位。
 
-| 学科 | 关键词示例（从高到低） |
+| 学科（仅示例） | 关键词示例（从高到低） |
 | --- | --- |
 | 天文 | `21cm cosmology, EoR, high redshift, JWST` |
 | 物理 | `quantum entanglement, superconductivity, magnetic reconnection` |
