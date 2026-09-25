@@ -14,6 +14,8 @@ export const HELP = [
   '/arxiv test — 按优先级试发前一个自然日新提交且尚未发过的 1 篇',
   '/arxiv now — 现在处理前一个自然日新提交且尚未发过的论文',
   '/arxiv status — 订阅、运行与发送状态',
+  '/arxiv zotero — 绑定自己的 Zotero、选择文件夹及查看收藏状态',
+  '/arxiv save arXiv编号 — 收藏已经收到的论文（需先绑定 Zotero）',
   '/arxiv retry — 重试明确被微信拒绝的消息',
   '/arxiv retry uncertain — 核对手机后重试不确定的消息，可能重复',
   '/arxiv pause /arxiv resume — 暂停/恢复',
@@ -53,6 +55,9 @@ export function runCommand(content, who, service) {
   }
   if (!sub) return '你还没有订阅。发送：\n/arxiv subscribe 21cm, EoR, high redshift';
   store.patchSub(who.key, {last_inbound: now}, now);
+  if (command === 'zotero' || command === 'save') return service.zotero?.ready
+    ? service.zotero.command(who.key,command,args)
+    : '管理员尚未启用 Zotero 收藏；请联系管理员完成 Zotero 应用配置。';
   if (command === 'topics' || command === 'priority' && !args) return `你的方向优先级（P1 最高）：\n${priorityList(sub.topics)}`;
   if (command === 'priority') {
     const move = /^([1-9]\d*)\s+(.+)$/.exec(args);
@@ -88,6 +93,7 @@ export function runCommand(content, who, service) {
     return command === 'pause' ? '已暂停你的日报；正在发送的一条可能已经提交。' : '已恢复你的日报。';
   }
   if (command === 'unsubscribe') {
+    service.zotero?.cancelSubscriber(who.key);
     store.forget(who.key);
     return '已删除你的日报订阅与本程序的个人发送记录。微信聊天记录和 OpenClaw 通道日志仍由原系统保存。';
   }

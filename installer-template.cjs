@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Windows installer for arxiv-daily 0.3.2, OpenClaw 2026.9.6.
+// Windows installer for arxiv-daily 0.4.0, OpenClaw 2026.9.6.
 // No shell eval, policy bypass, API-key copying, or outbound test messages.
 // --prepare-only extracts the readable source without changing OpenClaw.
 const fs = require('node:fs');
@@ -16,12 +16,14 @@ const option = name => {const at=args.indexOf(name);return at<0?undefined:args[a
 const options = name => args.flatMap((arg, i) => arg === name ? [args[i + 1]] : []);
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const stateDir = path.resolve(process.env.OPENCLAW_STATE_DIR || path.join(os.homedir(), '.openclaw'));
-let target = path.resolve(option('--dir') || path.join(stateDir, 'local-plugins', 'arxiv-daily-0.3.2'));
+let target = path.resolve(option('--dir') || path.join(stateDir, 'local-plugins', 'arxiv-daily-0.4.0'));
 const prepareOnly = args.includes('--prepare-only');
 const upgrading = args.includes('--upgrade');
+const configuringZotero = args.includes('--configure-zotero');
 const accountToAdd = option('--add-account');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 let stoppedGateway = false;
+let gatewayStartAttempted = false;
 
 function runNode(file, cmdArgs, options={}) {
   const result = spawnSync(process.execPath, [file, ...cmdArgs], {
@@ -39,7 +41,7 @@ function checkUpgrade(directory) {
   const previous = JSON.parse(Buffer.from(PAYLOAD.find(p=>p.name==='upgrade-manifests.json').data,'base64').toString('utf8'));
   const next = JSON.parse(Buffer.from(PAYLOAD.find(p=>p.name==='package.json').data,'base64').toString('utf8'));
   const knownPackage=pkg.name==='openclaw-arxiv-daily'||(pkg.version==='0.1.0'&&pkg.name==='arxiv-daily-local');
-  if(!knownPackage||manifest.id!=='arxiv-daily'||(!previous[pkg.version]&&pkg.version!==next.version))fail('Only a supported arxiv-daily installation (0.1.0, 0.1.1, 0.2.0, 0.3.0, 0.3.1, or this version) can be upgraded automatically. No files changed.');
+  if(!knownPackage||manifest.id!=='arxiv-daily'||(!previous[pkg.version]&&pkg.version!==next.version))fail('Only a supported arxiv-daily installation (0.1.0, 0.1.1, 0.2.0, 0.3.0, 0.3.1, 0.3.2, or this version) can be upgraded automatically. No files changed.');
   for(const item of PAYLOAD){
     const file=path.join(directory,item.name);
     if(!fs.existsSync(file))continue;
@@ -110,23 +112,35 @@ function patch(claw, folder, config) {
 }
 
 function main() {
-  const accepted = new Set(['--prepare-only','--dir','--account','--agent','--add-account','--upgrade','--help']);
+  const accepted = new Set(['--prepare-only','--dir','--account','--agent','--add-account','--upgrade','--configure-zotero','--callback-url','--help']);
   for(let i=0;i<args.length;i++){
     if(!accepted.has(args[i]))fail(`Unknown option: ${args[i]}`);
-    if(['--dir','--account','--agent','--add-account'].includes(args[i])) {if(!args[i+1]||args[i+1].startsWith('--'))fail(`Missing value: ${args[i]}`);i++;}
+    if(['--dir','--account','--agent','--add-account','--callback-url'].includes(args[i])) {if(!args[i+1]||args[i+1].startsWith('--'))fail(`Missing value: ${args[i]}`);i++;}
   }
   if(args.includes('--help')){
-    console.log('node install-arxiv-daily.cjs --account BOT_ACCOUNT_ID [--account ANOTHER_BOT_ACCOUNT_ID] [--agent AGENT_ID]\nnode install-arxiv-daily.cjs --prepare-only [--dir PATH]\nnode install-arxiv-daily.cjs --upgrade\nnode install-arxiv-daily.cjs --add-account BOT_ACCOUNT_ID');return;
+    console.log('node install-arxiv-daily.cjs --account BOT_ACCOUNT_ID [--account ANOTHER_BOT_ACCOUNT_ID] [--agent AGENT_ID]\nnode install-arxiv-daily.cjs --prepare-only [--dir PATH]\nnode install-arxiv-daily.cjs --upgrade\nnode install-arxiv-daily.cjs --configure-zotero [--callback-url HTTPS_URL]\nnode install-arxiv-daily.cjs --add-account BOT_ACCOUNT_ID');return;
   }
   if(Number(process.versions.node.split('.')[0])<24)fail('Node 24 or newer is required.');
   if(!prepareOnly && process.platform!=='win32')fail('Installation targets Windows. Use --prepare-only to inspect the source on another OS.');
   if(prepareOnly&&accountToAdd)fail('--prepare-only and --add-account cannot be combined.');
+  if(configuringZotero&&(prepareOnly||upgrading||accountToAdd||option('--dir')||option('--account')||option('--agent')))fail('--configure-zotero cannot be combined with installation or account changes.');
+  if(option('--callback-url')&&!configuringZotero)fail('--callback-url requires --configure-zotero.');
   if(upgrading&&(prepareOnly||accountToAdd||option('--dir')))fail('--upgrade cannot be combined with --prepare-only, --add-account, or --dir.');
-  if(!accountToAdd&&!upgrading)extract();
+  if(!accountToAdd&&!upgrading&&!configuringZotero)extract();
   if(prepareOnly){console.log('Prepared only. OpenClaw and the Gateway were not changed.');return;}
 
   const host=findOpenClaw();
   const claw=(cmd,options={})=>runNode(host.entry,cmd,options);
+  if(configuringZotero){
+    const installed=jsonOutput(claw(['plugins','inspect','arxiv-daily','--json'],{capture:true}));
+    const root=installed?.plugin?.rootDir;
+    if(!root)fail('Upgrade arxiv-daily first, then configure Zotero.');
+    const script=path.join(root,'configure-zotero.ps1');
+    if(!fs.existsSync(script))fail('This installation does not include Zotero setup. Run --upgrade first.');
+    const result=spawnSync('powershell.exe',['-NoProfile','-File',script,...(option('--callback-url')?['-CallbackUrl',option('--callback-url')]:[])],{stdio:'inherit',windowsHide:false});
+    if(result.error||result.status!==0)fail('Zotero setup did not finish. Read the output above; normal PowerShell execution policy applies.');
+    return;
+  }
   const current=jsonOutput(claw(['config','get','plugins.entries.arxiv-daily','--json'],{capture:true,allowFailure:true}));
   const defaults={allowedAccountIds:[],agentId:'arxiv_bot_v1',
     defaultTopics:['21cm','EoR','high redshift'],defaultLanguage:'zh',sendTime:'08:00',timeZone:'Asia/Shanghai',maxSubscribers:50,lookbackDays:1};
@@ -197,6 +211,7 @@ function main() {
   claw(binds);
   claw(['config','validate']);
   console.log('Starting Gateway. Startup may take a few minutes on this installation.');
+  gatewayStartAttempted=true;
   claw(['gateway','start']);stoppedGateway=false;
   claw(['plugins','inspect','arxiv-daily','--runtime','--json']);
   claw(['channels','status','--channel','openclaw-weixin','--probe'],{allowFailure:true});
@@ -209,6 +224,7 @@ function main() {
 module.exports = {checkUpgrade};
 if(require.main===module)try{main();}catch(error){
   console.error(`\nInstallation stopped: ${error.message}`);
-  if(stoppedGateway)console.error('The Gateway was stopped during setup. Resolve the reported error and rerun this installer; it was not silently restarted with an incomplete plugin.');
+  if(stoppedGateway&&!gatewayStartAttempted)console.error('The Gateway was stopped during setup. Resolve the reported error and rerun this installer; it was not silently restarted with an incomplete plugin.');
+  if(gatewayStartAttempted)console.error('Gateway start was attempted, but readiness was not confirmed. Run openclaw gateway status to check the actual runtime before reinstalling.');
   process.exitCode=1;
 }

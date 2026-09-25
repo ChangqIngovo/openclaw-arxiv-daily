@@ -5,6 +5,8 @@ import { Summarizer, formatPaper, chunkText } from './summary.js';
 import { matchingTopics, parseTopics, rankPapers } from './topics.js';
 import { localStamp, previousDayWindow, inWindow, isCurrentWindow } from './dates.js';
 import { PaperReader } from './fulltext.js';
+import { loadApp } from './zotero-auth.js';
+import { ZoteroService } from './zotero-service.js';
 
 export { localStamp } from './dates.js';
 
@@ -18,6 +20,8 @@ export function resolveConfig(input = {}) {
     lookbackDays: 1,
   };
   c.defaultTopics = parseTopics(c.defaultTopics);
+  c.zotero = {enabled:false,...input.zotero};
+  if (typeof c.zotero.enabled !== 'boolean' || c.zotero.credentialsFile != null && (typeof c.zotero.credentialsFile !== 'string' || !c.zotero.credentialsFile)) throw new Error('Invalid Zotero configuration.');
   c.allowedAccountIds = [...new Set(c.allowedAccountIds || [])];
   if (!c.allowedAccountIds.length || c.allowedAccountIds.some(v => typeof v !== 'string' || !v)) throw new Error('arxiv-daily requires allowedAccountIds.');
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(c.sendTime)) throw new Error('Invalid sendTime.');
@@ -66,6 +70,14 @@ export class DigestService {
     const reader = new PaperReader({store: this.store, fetchImpl: this.fetchImpl, clock: this.clock,
       waitForRequest: signal => this.client.waitForRequest(signal)});
     this.summarizer = new Summarizer({store: this.store, reader, complete: this.complete, agentId: this.config.agentId, clock: this.clock});
+    if (this.config.zotero?.enabled) {
+      try {
+        const app = loadApp(this.config.zotero.credentialsFile || join(this.stateDir,'arxiv-daily','zotero-app.json'));
+        this.zotero = new ZoteroService({store:this.store,app,allowedAccountIds:this.config.allowedAccountIds,
+          send:this.send,logger:this.logger,clock:this.clock,fetchImpl:this.fetchImpl});
+        this.zotero.start();
+      } catch { this.logger.warn('[arxiv-daily] Zotero setup unavailable; check the local application credentials file. Digest remains available.'); }
+    }
     this.ready = true;
     this.timer = setInterval(() => this.kick(), 30_000); this.timer.unref?.();
     this.logger.info(`[arxiv-daily] ready; daily ${this.config.sendTime} ${this.config.timeZone}; subscription-only Weixin; SQLite enabled.`);
@@ -84,6 +96,7 @@ export class DigestService {
   async stop() {
     this.ready = false; clearInterval(this.timer); clearTimeout(this.kickTimer);
     this.abort.abort(new Error('arxiv-daily service stopped'));
+    if (this.zotero) await this.zotero.stop();
     if (this.work) await this.work;
     this.store?.close(); this.store = null;
   }
@@ -175,8 +188,10 @@ export class DigestService {
         const summary = await this.summarizer.get(paper, sub.language, signal);
         current = this.store.sub(sub.key);
         if (!stillCurrent() || !this.allowed(current) || current.revision !== sub.revision) { finish('cancelled', '订阅或日期已变化，未继续发送。'); return; }
+        this.store.putReadingSnapshot(sub.key,{paper,summary,language:sub.language,matched},this.clock());
+        const saveHint = this.zotero?.ready ? `\n\n收藏到 Zotero：/arxiv save ${paper.id}` : '';
         this.store.prepareDelivery(sub.key, paper.id, sub.language,
-          chunkText(formatPaper(paper, summary, sub.language, matched, i + 1 + resumable.length, total, priority, this.config.timeZone)), this.clock());
+          chunkText(formatPaper(paper, summary, sub.language, matched, i + 1 + resumable.length, total, priority, this.config.timeZone) + saveHint), this.clock());
         physicalSend = true;
         if (await this.sendDelivery(sub.key, paper.id, sub.revision, window)) sent++;
         else { finish('cancelled', '订阅或日期已变化，未继续发送。'); return; }

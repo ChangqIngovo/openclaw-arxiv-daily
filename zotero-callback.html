@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; connect-src 'none'">
+  <title>Zotero 授权 · arXiv Daily</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#162d31;background:#f4f6f3;color-scheme:light}
+    body{margin:0;padding:64px 20px}main{max-width:560px;margin:auto;padding:36px;background:white;border:1px solid #dce5df;border-radius:18px}
+    .brand{font-size:13px;font-weight:650;letter-spacing:.1em;color:#47635a}h1{font-size:28px;line-height:1.3;margin:24px 0 18px}p{line-height:1.8}
+    textarea{box-sizing:border-box;width:100%;height:132px;margin:12px 0;padding:16px;border:1px solid #b7c9bf;border-radius:8px;font:14px/1.7 ui-monospace,monospace;resize:vertical;overflow-wrap:anywhere}
+    button{background:#1d6753;color:white;padding:13px 20px;border:0;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+    .note{font-size:13px;color:#5b6c65;margin-top:28px}noscript{color:#973528}
+    @media(max-width:480px){body{padding:24px 14px}main{padding:26px 22px}h1{font-size:25px}}
+  </style>
+  <script type="module" src="./src/zotero-callback.js"></script>
+</head>
+<body><main>
+  <div class="brand">ARXIV DAILY / ZOTERO</div>
+  <h1>返回微信，完成绑定</h1>
+  <p id="status">正在读取授权结果…</p>
+  <textarea id="command" readonly hidden aria-label="发回微信的授权完成指令" spellcheck="false"></textarea>
+  <button id="copy" type="button" hidden>复制绑定指令</button>
+  <p class="note">这是一次性授权完成指令，不是 Zotero 密码或长期 API Key。请在申请后的 15 分钟内发回自己的微信会话。此页不使用分析统计，也不向第三方发送授权数据。</p>
+  <noscript>请启用 JavaScript，再从微信中的 Zotero 授权链接重新开始。</noscript>
+</main></body>
+</html>

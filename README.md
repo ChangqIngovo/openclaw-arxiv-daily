@@ -4,7 +4,7 @@
 
 A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with previous-day filtering, per-user keyword priorities, and Chinese or English summaries grounded in the paper body.
 
-**实验版本 0.3.2**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 39 项离线行为测试，并验证真实 arXiv API 读取，以及一篇 21-cm 论文的 HTML 和 15 页 PDF 正文提取。0.3.1 已在一套 Windows 环境完成 Gateway 加载、真实模型调用及微信正文概括收件的手动试发；**定时推送及 50 人持续运行尚待验证**。
+**实验版本 0.4.0**。适配目标：Windows、Node 24、OpenClaw **2026.9.6**、腾讯微信插件 **2.4.8**。这是社区项目，不是腾讯或 OpenClaw 官方插件。已通过 55 项离线行为测试，并验证真实 arXiv API 读取，以及一篇 21-cm 论文的 HTML 和 15 页 PDF 正文提取。0.3.1 已在一套 Windows 环境完成 Gateway 加载、真实模型调用及微信正文概括收件的手动试发；**Zotero 真实授权与写入、本版 Windows 配置脚本、定时推送及 50 人持续运行尚待验证**。
 
 ## 能做什么
 
@@ -19,6 +19,7 @@ A small, self-hosted arXiv digest plugin for OpenClaw Weixin, with previous-day 
 - 确定性解析 `/arxiv` 指令；插件生效期间，微信普通文本不会启动 AI 对话。
 - 使用已有 OpenClaw agent 的模型与认证，不需要在本插件中填写额外 API key。
 - SQLite 保存订阅、任务与发送状态；后台调度使用插件服务。
+- 可选 Zotero 个人库收藏：每人独立授权、选择文件夹，把感兴趣的已收论文、阅读笔记及 PDF 链接保存到自己的库。
 
 ## 五类学科
 
@@ -63,7 +64,7 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --account "YOUR_FIRST_
 
 公开安装包不包含任何个人账号 ID。安装器会展开可读源码、安装锁定依赖、运行测试、备份配置，然后通过 OpenClaw 的正常插件安装与启用流程完成配置。过程中会停止并重新启动 Gateway。OpenClaw 可能要求审阅本地插件来源或能力；按其正常提示处理，安装器不绕过授权检查。
 
-默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.3.2`。如只想先展开检查源码：
+默认安装目录：`%USERPROFILE%\.openclaw\local-plugins\arxiv-daily-0.4.0`。如只想先展开检查源码：
 
 ```powershell
 node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
@@ -71,12 +72,12 @@ node "$env:USERPROFILE\Downloads\install-arxiv-daily.cjs" --prepare-only
 
 可以加 `--dir "目标目录"`。安装器不会覆盖手工修改过的源码，也不会自动替换其他目录注册的同名插件。已有安装产生冲突时，先核对插件路径并保留修改，不要删除订阅数据库来解决路径问题。原有 cron 维护任务保留。
 
-## 已有安装：在 PowerShell 更新到 0.3.2
+## 已有安装：在 PowerShell 更新到 0.4.0
 
-已装过本项目 0.1.0、0.1.1、0.2.0、0.3.0 或 0.3.1 时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
+已装过本项目 0.1.0、0.1.1、0.2.0、0.3.0、0.3.1 或 0.3.2 时，运行下面的命令。只在 GitHub 更新 README 不会自动更新你电脑上的插件。
 
 ```powershell
-$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.3.2.cjs"
+$ArxivInstaller = Join-Path $env:TEMP "install-arxiv-daily-0.4.0.cjs"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ChangqIngovo/openclaw-arxiv-daily/main/install-arxiv-daily.cjs" -OutFile $ArxivInstaller -ErrorAction Stop
 node $ArxivInstaller --upgrade
 ```
@@ -89,7 +90,7 @@ node $ArxivInstaller --upgrade
 
 0.3.0 在 Windows 上把 PDF.js 的字体和 CMap 目录写成了以反斜杠结尾的路径；PDF.js 要求这些目录以 `/` 结尾，因此 PDF 解析会在初始化时失败。0.3.1 将资源路径统一为正斜杠，仍由 Node 从本地读取，并在本地测试错误中保留原始解析异常。
 
-如果上一轮输出 `PDF 无法完整提取文本`、`Cannot read properties of undefined (reading 'format')`，随后提示 Gateway 已停止，直接下载上面的 **0.3.2 安装器并重跑 `--upgrade`**。已展开的 0.3.0 源码及新旧版本混合的中断状态均可核对后继续升级；原来的配置、订阅和发送记录保留。无需删除 `arxiv-daily-0.1.0` 等旧名称目录，程序会从实际注册位置原地更新。
+如果上一轮输出 `PDF 无法完整提取文本`、`Cannot read properties of undefined (reading 'format')`，随后提示 Gateway 已停止，直接下载上面的 **0.4.0 安装器并重跑 `--upgrade`**。已展开的 0.3.0 源码及新旧版本混合的中断状态均可核对后继续升级；原来的配置、订阅和发送记录保留。无需删除 `arxiv-daily-0.1.0` 等旧名称目录，程序会从实际注册位置原地更新。
 
 安装器会在测试通过后继续配置和启动 Gateway。仍未通过时会保留具体原因，不跳过测试。回归测试在当前执行环境中重现 Windows 盘符及 UNC 路径，调用真实 PDF.js 验证初始化，并检查本地资源可读；这不等于已经验证所有 Windows 运行环境。
 
@@ -101,6 +102,26 @@ openclaw gateway status
 ```
 
 检查插件运行时信息是否加载成功，然后在微信里发送 `/arxiv status` 核对实际日期范围，再用 `/arxiv test` 试发。无需重新订阅；`/arxiv lang zh` 或 `en` 现在均读取正文后概括。现有安装目录可能仍包含旧版本号，这是原地更新的正常结果，以目录内 `package.json` 的版本和实际命令行为为准。
+
+## 收藏到每个人自己的 Zotero
+
+Zotero 默认关闭。管理员先发布仓库自带的静态回调网页、注册一个 Zotero OAuth 应用，再在 Windows 本机运行：
+
+```powershell
+node $ArxivInstaller --configure-zotero
+```
+
+完整部署、个人授权、文件夹选择及失败恢复步骤见 **[ZOTERO.md](ZOTERO.md)**。应用配置完成后，每个订阅者在自己的微信会话中使用：
+
+```text
+/arxiv zotero connect
+/arxiv zotero folders
+/arxiv zotero folder EoR
+/arxiv save 2609.30003
+/arxiv zotero status
+```
+
+每次一条，等待完成再执行下一条；connect 后先按官方授权网页提示，将一次性完成指令发回微信。重名文件夹用八位编号选择。收藏按 arXiv 基础编号去重，可收藏较早收到的日报，使用当时的论文版本和概括，不重新调用模型。保存的是 **PDF 链接**，本版不上传 PDF 文件。每个微信订阅者只能使用自己的 Zotero 个人库授权。
 
 ## 第一次订阅
 
@@ -143,6 +164,8 @@ openclaw gateway status
 | `/arxiv test` | 按优先级试发前一日首次提交且尚未发送的 1 篇 |
 | `/arxiv now` | 立即处理前一日首次提交且本人尚未发送的论文 |
 | `/arxiv status` | 查看订阅、最近任务及投递状态 |
+| `/arxiv zotero` | 查看个人 Zotero 绑定、文件夹选择及收藏指令 |
+| `/arxiv save arXiv编号` | 把已收到的论文收藏到本人 Zotero；需先完成授权与文件夹设置 |
 | `/arxiv pause` | 暂停本人订阅 |
 | `/arxiv resume` | 恢复本人订阅 |
 | `/arxiv retry` | 重试当前前一日范围内微信明确拒绝的消息 |

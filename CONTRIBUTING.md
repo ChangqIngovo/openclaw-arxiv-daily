@@ -11,6 +11,10 @@ This is an experimental OpenClaw plugin. Small, focused fixes and documentation 
 Preserve these behaviors:
 
 - Sender identity comes from trusted channel context. A command can only change its sender's subscription.
+- Zotero OAuth requests, grants, folders, jobs and reading snapshots belong to the same trusted account/peer subscriber key. Bind only the user's personal library, verify key permissions and user ID, and never accept recipient or library overrides from a message.
+- Keep OAuth client credentials and the encryption key outside the source tree; encrypt user grants with subscriber-bound authenticated encryption. Never include grants in model prompts, logs or response messages.
+- Zotero saves must use a received reading snapshot and version. This explicit bookmarking action can select an older delivered paper; it does not widen daily arXiv fetching or delivery dates.
+- Library writes must reconcile fixed create-only item keys after uncertain responses. Preserve existing metadata, notes and collection membership, and guard against disconnects between requests. PDF links are not uploaded PDF files.
 - Topic array order is the subscriber's priority order. Rank new papers per subscriber, before applying the one-paper test limit; never put personal ranks in the shared cache.
 - Every new, test, retry and resumed delivery is restricted to the previous civil day in the configured timezone, using first submission time. Do not widen the range to fill empty days.
 - Read the version-pinned paper body before summarizing. Every extracted segment must participate; unavailable or oversized bodies need an explicit no-summary notice, never a silent abstract-only substitute. State the limits of text extraction and do not claim visual figure inspection.

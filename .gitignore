@@ -14,6 +14,8 @@ node_modules/
 openclaw.json
 openclaw.json.*
 credentials/
+zotero-app.json
+zotero-app.json.*
 state/
 logs/
 arxiv-daily-backups/

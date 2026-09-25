@@ -7,7 +7,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 // An explicit allowlist keeps credentials, local runtime state and node_modules out.
 const names = ['package.json', 'package-lock.json', 'openclaw.plugin.json', 'README.md', 'LICENSE',
   'CONTRIBUTING.md', '.gitignore', '.gitattributes', 'config.example.json', 'upgrade-manifests.json',
-  'scripts/build-installer.mjs', 'installer-template.cjs',
+  'scripts/build-installer.mjs', 'installer-template.cjs', 'configure-zotero.ps1', 'zotero-callback.html', 'ZOTERO.md', '.nojekyll',
   ...(await readdir(join(root, 'src'))).filter(n => n.endsWith('.js')).sort().map(n => `src/${n}`),
   ...(await readdir(join(root, 'test'))).filter(n => n.endsWith('.test.js')).sort().map(n => `test/${n}`)];
 const files = [];

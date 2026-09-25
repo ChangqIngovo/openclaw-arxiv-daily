@@ -23,6 +23,10 @@ export class Store {
         data TEXT NOT NULL, first_seen INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS summaries (
         key TEXT PRIMARY KEY, data TEXT NOT NULL, created INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS reading_snapshots (
+        subscriber TEXT NOT NULL REFERENCES subscribers(key) ON DELETE CASCADE,
+        paper TEXT NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL,
+        PRIMARY KEY(subscriber,paper));
       CREATE TABLE IF NOT EXISTS runs (
         id TEXT PRIMARY KEY, subscriber TEXT NOT NULL REFERENCES subscribers(key),
         kind TEXT NOT NULL, day TEXT, status TEXT NOT NULL, created INTEGER NOT NULL,
@@ -93,6 +97,13 @@ export class Store {
   papers(since, until = Number.MAX_SAFE_INTEGER) { return this.db.prepare('SELECT data FROM papers WHERE published>=? AND published<? ORDER BY published DESC,id').all(since, until).map(r => JSON.parse(r.data)); }
   paper(id) { const r = this.db.prepare('SELECT data FROM papers WHERE id=?').get(id); return r ? JSON.parse(r.data) : undefined; }
   summary(key) { const r = this.db.prepare('SELECT data FROM summaries WHERE key=?').get(key); return r ? JSON.parse(r.data) : undefined; }
+  readingSnapshot(owner, paper) {
+    const row = this.db.prepare('SELECT data FROM reading_snapshots WHERE subscriber=? AND paper=?').get(owner,paper);
+    return row ? JSON.parse(row.data) : undefined;
+  }
+  putReadingSnapshot(owner, snapshot, now) {
+    this.db.prepare('INSERT OR IGNORE INTO reading_snapshots VALUES (?,?,?,?)').run(owner,snapshot.paper.id,JSON.stringify(snapshot),now);
+  }
   putSummary(key, data, now) { this.db.prepare('INSERT OR REPLACE INTO summaries VALUES (?,?,?)').run(key, JSON.stringify(data), now); }
   enqueue(key, kind, now, day = null) {
     // One outstanding job per subscriber; another daily tick will catch up.

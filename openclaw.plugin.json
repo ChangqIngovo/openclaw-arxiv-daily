@@ -1,7 +1,7 @@
 {
   "id": "arxiv-daily",
   "name": "arXiv Daily",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Weixin subscription commands, shared arXiv cache, and daily delivery. Ordinary Weixin messages never start an agent turn while this plugin is active.",
   "categories": [
     "research"
@@ -82,6 +82,21 @@
         "type": "integer",
         "minimum": 3000,
         "default": 3200
+      },
+      "zotero": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "credentialsFile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Local file containing application credentials and encryption key; never paste secret values into plugin config."
+          }
+        }
       }
     }
   }

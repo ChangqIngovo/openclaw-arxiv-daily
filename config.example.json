@@ -2,18 +2,29 @@
   "plugins": {
     "entries": {
       "arxiv-daily": {
-        "llm": { "allowAgentIdOverride": true },
+        "llm": {
+          "allowAgentIdOverride": true
+        },
         "config": {
-          "allowedAccountIds": ["YOUR_BOT_ACCOUNT_ID"],
+          "allowedAccountIds": [
+            "YOUR_BOT_ACCOUNT_ID"
+          ],
           "agentId": "arxiv_bot_v1",
-          "defaultTopics": ["21cm", "EoR", "high redshift"],
+          "defaultTopics": [
+            "21cm",
+            "EoR",
+            "high redshift"
+          ],
           "defaultLanguage": "zh",
           "sendTime": "08:00",
           "timeZone": "Asia/Shanghai",
           "maxSubscribers": 50,
           "lookbackDays": 1,
           "maxResultsPerQuery": 2000,
-          "requestIntervalMs": 3200
+          "requestIntervalMs": 3200,
+          "zotero": {
+            "enabled": false
+          }
         }
       }
     }
