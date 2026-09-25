@@ -1,6 +1,6 @@
 # OpenClaw arXiv Daily · 个人版
 
-每天用微信接收感兴趣的 arXiv 新论文：英文 abstract、阅读全文后生成的中／英文概括、原文链接。按关键词优先级排列，可手动收藏到自己的 Zotero。
+每天用微信接收感兴趣的 arXiv 新论文：abstract、阅读全文后生成的中／英文概括、原文链接。按关键词优先级排列，可手动收藏到自己的 Zotero。
 
 **默认跟随电脑时区，每天当地时间 08:00 开始，只取前一个自然日首次提交的论文。**
 
@@ -26,7 +26,7 @@ node "$HOME/install-arxiv-daily.cjs"
 
 **升级也运行上面的命令**，保留原有订阅和发送记录。完成后在微信发送 `/arxiv test` 试发一篇，`/arxiv status` 查看状态。
 
-## 微信常用指令
+## 常用指令（在微信聊天框输入）
 
 | 指令 | 作用 |
 | --- | --- |
@@ -36,7 +36,7 @@ node "$HOME/install-arxiv-daily.cjs"
 | `/arxiv lang zh` | 中文概括；`en` 英文；`none` 仅 abstract |
 | `/arxiv test` | 试发前一天未发过的 1 篇 |
 | `/arxiv status` | 查看订阅、当前时区和任务状态 |
-| `/arxiv save 2609.12345` | 收藏指定的已收论文到 Zotero（编号仅示例） |
+| `/arxiv save 4321.12345` | 收藏指定的已收论文到 Zotero（编号仅示例） |
 | `/arxiv help` | 查看全部指令，包括暂停、恢复和删除方向 |
 
 电脑需要开机、联网且未休眠。普通聊天不会启动 AI 对话；论文不会自动收藏。
