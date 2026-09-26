@@ -35,6 +35,10 @@ export class Store {
         next_attempt INTEGER NOT NULL DEFAULT 0);
       CREATE INDEX IF NOT EXISTS runs_queue ON runs(status,created);
       CREATE UNIQUE INDEX IF NOT EXISTS daily_once ON runs(subscriber,day) WHERE kind='daily';
+      CREATE TABLE IF NOT EXISTS run_notices (
+        run TEXT PRIMARY KEY REFERENCES runs(id) ON DELETE CASCADE,
+        status TEXT NOT NULL, text TEXT NOT NULL, updated INTEGER NOT NULL,
+        message_id TEXT, error TEXT);
       CREATE TABLE IF NOT EXISTS deliveries (
         subscriber TEXT NOT NULL REFERENCES subscribers(key), paper TEXT NOT NULL,
         status TEXT NOT NULL, language TEXT NOT NULL, parts TEXT NOT NULL,
@@ -47,6 +51,7 @@ export class Store {
     this.set('schema', 1);
     // An interrupted physical send cannot be assumed to have failed.
     this.db.prepare("UPDATE deliveries SET status='unknown',error='发送时进程中断，需核对后手动重试。' WHERE status='sending'").run();
+    this.db.prepare("UPDATE run_notices SET status='unknown',error='无新论文通知发送时进程中断，结果不确定；请先核对微信，需要重新查询可用 /arxiv now。' WHERE status='sending'").run();
     this.db.prepare("UPDATE runs SET status='queued' WHERE status='running'").run();
   }
   close() { this.db.close(); }
@@ -122,6 +127,13 @@ export class Store {
     this.db.prepare('UPDATE runs SET status=?,updated=?,error=?,sent=?,total=? WHERE id=?').run(status, now, error, sent, total, id);
   }
   latestRun(key) { return this.db.prepare('SELECT * FROM runs WHERE subscriber=? ORDER BY created DESC,rowid DESC LIMIT 1').get(key); }
+  runNotice(id) { return this.db.prepare('SELECT * FROM run_notices WHERE run=?').get(id); }
+  startRunNotice(id, text, now) {
+    return this.db.prepare("INSERT OR IGNORE INTO run_notices (run,status,text,updated) VALUES (?,'sending',?,?)").run(id,text,now).changes > 0;
+  }
+  finishRunNotice(id, status, now, error = null, messageId = null) {
+    this.db.prepare('UPDATE run_notices SET status=?,updated=?,error=?,message_id=? WHERE run=?').run(status,now,error,messageId,id);
+  }
   delivery(key, paper) {
     const r = this.db.prepare('SELECT * FROM deliveries WHERE subscriber=? AND paper=?').get(key, paper);
     return r ? { ...r, parts: JSON.parse(r.parts), message_ids: JSON.parse(r.message_ids) } : undefined;

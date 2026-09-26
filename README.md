@@ -42,6 +42,6 @@ node "$HOME/install-arxiv-daily.cjs"
 
 分类支持 `astro-ph.CO`、`cs.AI`、`quant-ph` 等，也可写成 `cat:astro-ph.CO`；包含交叉分类，同篇只发一次。
 
-试发也计入已发送，日报不会重复发送；没有待发论文时不发空消息。电脑需要开机、联网且未休眠。普通聊天不会启动 AI 对话；论文不会自动收藏。
+试发也计入已发送，日报不会重复发送；没有待发论文时会收到“没有新论文”通知。电脑需要开机、联网且未休眠。普通聊天不会启动 AI 对话；论文不会自动收藏。
 
 [更换模型](MODEL_SETUP.md) · [连接 Zotero](ZOTERO.md) · [详细规则与排错](DETAILS.md) · [开发](CONTRIBUTING.md)

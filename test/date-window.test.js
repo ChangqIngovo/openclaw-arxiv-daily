@@ -63,7 +63,10 @@ test('no previous-day matches does not fall back to older history or resume old 
   store.putPapers([paper('2609.30001',now-4*DAY)],now);
   store.prepareDelivery(sub.key,'2609.30001','none',['old cached message'],now);
   store.enqueue(sub.key,'now',now); await service.process(store.nextRun(now));
-  assert.equal(sent.length,0); assert.equal(store.latestRun(sub.key).total,0);
+  assert.equal(sent.length,1); assert.match(sent[0].text,/没有新论文/);
+  assert.doesNotMatch(sent[0].text,/old cached message|arXiv:2609/);
+  assert.equal(store.delivery(sub.key,'2609.30001').next_part,0);
+  assert.equal(store.latestRun(sub.key).total,0);
   store.close();
 });
 

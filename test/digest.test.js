@@ -141,7 +141,9 @@ test('now and daily deliveries use each user priority before date, deduplicate c
   assert.deepEqual(received('account-a').map(p=>/优先级：P(\d+)/.exec(p.text)[1]),['1','1','1','2','3']);
   assert.match(received('account-a')[2].text,/匹配方向：21cm、EoR/);
   assert.deepEqual(store.papers(0).map(p=>p.id),originalOrder);
-  store.enqueue(a.key,'daily',now+1);await service.process(store.nextRun(now+1));assert.equal(sends.length,10);
+  store.enqueue(a.key,'daily',now+1);await service.process(store.nextRun(now+1));assert.equal(sends.length,11);
+  assert.match(sends[10].text,/没有新论文可推送.*5 篇已发送/);
+  assert.equal(sends.filter(message=>/arXiv:\d{4}\.\d+v/.test(message.text)).length,10);
   store.close();
 });
 
@@ -234,7 +236,8 @@ test('two users get their own account/recipient; cached summary is reused; rerun
   assert.deepEqual(sends.map(x=>[x.accountId,x.to]),[['account-a','one@im.wechat'],['account-b','two@im.wechat']]);
   assert.ok(sends.every(s=>s.text.includes(paper.abstract)&&s.text.includes('\n概括\n')));
   store.putPapers([{...paper,version:2}],now);
-  store.enqueue(a.key,'now',now+1);await service.process(store.nextRun());assert.equal(sends.length,2);
+  store.enqueue(a.key,'now',now+1);await service.process(store.nextRun());assert.equal(sends.length,3);
+  assert.match(sends[2].text,/没有新论文可推送.*1 篇已发送/);assert.equal(completions,1);
   store.close();
 });
 

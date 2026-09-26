@@ -66,7 +66,8 @@ test('daily and explicit now bypass even a recent successful query; test stays s
   assert.equal(state.requests.length,2);assert.equal(state.sent.length,3);
   state.now=morning+60_000;state.papers.push(paper(4));await run('now');
   assert.equal(state.requests.length,3);assert.equal(state.sent.length,4);
-  state.now+=60_000;await run('test');assert.equal(state.requests.length,3);assert.equal(state.sent.length,4);
+  state.now+=60_000;await run('test');assert.equal(state.requests.length,3);assert.equal(state.sent.length,5);
+  assert.match(state.sent[4],/没有新论文可推送.*4 篇已发送/);
 });
 
 test('ordinary query cache expires after 15 minutes and cache hits do not pretend a new fetch occurred',async t=>{

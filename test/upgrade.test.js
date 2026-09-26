@@ -17,7 +17,7 @@ function fixture(version='0.1.1') {
   };
   mkdirSync(join(dir,'src'));
   for(const [name,content] of Object.entries(old))writeFileSync(join(dir,name),content);
-  const next={...old,'package.json':JSON.stringify({name:'openclaw-arxiv-daily',version:'0.5.4'}),
+  const next={...old,'package.json':JSON.stringify({name:'openclaw-arxiv-daily',version:'0.5.5'}),
     'src/example.js':'new source',
     'upgrade-manifests.json':JSON.stringify({[version]:Object.fromEntries(Object.entries(old).map(([n,c])=>[n,hash(c)]))})};
   const payload=Object.entries(next).map(([name,content])=>({name,sha256:hash(content),data:Buffer.from(content).toString('base64')}));
@@ -28,7 +28,7 @@ function fixture(version='0.1.1') {
 }
 
 test('upgrade accepts a clean public installation and an interrupted mix of known old/new files without touching state', t=>{
-  for(const version of ['0.1.0','0.1.1','0.2.0','0.3.0','0.3.1','0.3.2','0.4.0','0.5.0','0.5.1','0.5.2','0.5.3']){
+  for(const version of ['0.1.0','0.1.1','0.2.0','0.3.0','0.3.1','0.3.2','0.4.0','0.5.0','0.5.1','0.5.2','0.5.3','0.5.4']){
     const {dir,check,next}=fixture(version);t.after(()=>rmSync(dir,{recursive:true,force:true}));
     writeFileSync(join(dir,'state.sqlite'),'subscription and delivery fixture');
     check();

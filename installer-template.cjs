@@ -9,7 +9,7 @@ const crypto = require('node:crypto');
 const {spawnSync} = require('node:child_process');
 const {pathToFileURL} = require('node:url');
 const PAYLOAD = __ARXIV_PAYLOAD__;
-const VERSION = '0.5.4', HOST_VERSION = '2026.9.6', WEIXIN_VERSION = '2.4.8';
+const VERSION = '0.5.5', HOST_VERSION = '2026.9.6', WEIXIN_VERSION = '2.4.8';
 const args = process.argv.slice(2);
 const fail = message => { throw new Error(message); };
 const option = name => { const at = args.indexOf(name); return at < 0 ? undefined : args[at+1]; };

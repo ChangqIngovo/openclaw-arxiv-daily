@@ -25,6 +25,7 @@ export const HELP = [
   '/arxiv unsubscribe — 删除本人的订阅和发送记录',
   '默认跟随运行 OpenClaw 的电脑时区，每日当地时间 08:00 开始，逐篇发送。普通聊天不会调用模型。',
   '严格按首次提交日期筛选，不补发更早论文；读取不到正文时不生成概括。',
+  '查询成功但没有待发论文时，会发送“没有新论文”通知；试发和手动查询同样适用。',
   '关键词或分类代码从左到右为 P1、P2…；P1 最高。分类含交叉分类，方向之间是“或”；同一篇只发一次，同级按日期从新到旧。',
 ].join('\n');
 
@@ -106,6 +107,8 @@ export function runCommand(content, who, service) {
   }
   if (command === 'status') {
     const run = store.latestRun(who.key);
+    const notice = run ? store.runNotice(run.id) : null;
+    const noticeStates = {sending:'发送中',submitted:'已提交',failed:'失败',unknown:'结果不确定'};
     const names = {queued: '等待处理', running: '处理中', done: '完成', failed: '失败', cancelled: '已取消'};
     const kinds = {daily: '定时日报', now: '手动查询', test: '试发', retry: '发送重试'};
     const stamp = ms => { const value = localStamp(ms, zone); return `${value.day} ${value.time}`; };
@@ -117,6 +120,7 @@ export function runCommand(content, who, service) {
       `最近任务：${run ? `${kinds[run.kind] || run.kind}；${names[run.status] || run.status}；已提交 ${run.sent}/${run.total} 篇` : '未运行'}`,
       run ? `任务入队：${stamp(run.created)}；更新：${stamp(run.updated)}（${zone}）` : '',
       run?.status === 'done' && !run.total && !run.error ? '本次没有待发论文；已发送的论文不会重复推送。' : '',
+      notice ? `无新论文通知：${noticeStates[notice.status] || notice.status}（不计入论文篇数）` : '',
       `累计：已提交 ${counts.submitted || 0}，失败 ${counts.failed || 0}，不确定 ${counts.unknown || 0}`,
       run?.error ? `原因：${run.error}` : '',
       '“已提交”只表示微信接口接受，是否收到请以手机为准。',

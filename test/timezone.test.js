@@ -100,7 +100,8 @@ test('system-mode API fetch, first-submission filtering and paper header use the
   assert.equal(sends.length,2);
   assert.deepEqual(sends.map(msg=>/arXiv:(\d{4}\.\d+)v1/.exec(msg.text)[1]),['2609.50003','2609.50002']);
   assert.ok(sends.every(msg=>msg.text.includes('首次提交 2026-09-24 Australia/Sydney')));
-  store.enqueue(sub.key,'now',now); await service.process(store.nextRun(now)); assert.equal(sends.length,2);
+  store.enqueue(sub.key,'now',now); await service.process(store.nextRun(now)); assert.equal(sends.length,3);
+  assert.match(sends[2].text,/没有新论文可推送.*2 篇已发送/);
 });
 
 test('zone change or failed timezone refresh during reading stops delivery even on the same local date', async t => {

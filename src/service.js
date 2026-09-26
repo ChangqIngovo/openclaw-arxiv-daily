@@ -144,13 +144,20 @@ export class DigestService {
     return true;
   }
   async process(job) {
-    let sent = 0, total = 0, physicalSend = false;
+    let sent = 0, total = 0, physicalSend = false, noticeFailure = null;
     const finish = (status, error = null) => this.store.runStatus(job.id, status, this.clock(), error, sent, total);
     const sub = this.store.sub(job.subscriber);
     if (!this.allowed(sub)) { finish('cancelled'); return; }
     const window = previousDayWindow(this.clock(), this.config.timeZone);
     if (localStamp(job.created, window.timeZone).day !== window.today || job.day && job.day !== window.today) {
       finish('cancelled', '旧日期任务已取消；只处理本次运行前一个自然日的新论文。'); return;
+    }
+    // A restart between sending a notice and finishing the job must not resend it.
+    const previousNotice = this.store.runNotice(job.id);
+    if (previousNotice) {
+      finish(previousNotice.status === 'submitted' ? 'done' : 'failed',
+        previousNotice.status === 'submitted' ? null : previousNotice.error || '无新论文通知已有发送记录；请核对微信，需要重新查询可用 /arxiv now。');
+      return;
     }
     const eligibleDelivery = d => {
       const p = this.store.paper(d.paper);
@@ -206,12 +213,39 @@ export class DigestService {
         physicalSend = false;
         finish('running');
       }
+      const blocked = outstanding.filter(d => ['failed', 'unknown'].includes(d.status));
+      if (!total && !blocked.length) {
+        signal.throwIfAborted();
+        const current = this.store.sub(sub.key);
+        if (!stillCurrent() || !this.allowed(current) || current.revision !== sub.revision) {
+          finish('cancelled', '订阅或日期已变化，未发送无新论文通知。'); return;
+        }
+        const result = alreadySubmitted
+          ? `没有新论文可推送，该日期匹配的 ${alreadySubmitted} 篇已发送。`
+          : '没有新论文。';
+        const text = `arXiv 日报 · ${window.today}\n${result}\n检索范围：${window.day}（${window.timeZone}），按当前订阅方向筛选。`;
+        if (!this.store.startRunNotice(job.id, text, this.clock())) {
+          finish('failed', '无新论文通知已有发送记录，未重复发送；请核对微信。'); return;
+        }
+        physicalSend = true;
+        try {
+          const response = await this.send({accountId:current.account,to:current.peer,text,signal});
+          if (!response?.messageId) throw new Error('cancelled by hook: no provider message id');
+          if (!this.store.sub(sub.key)) return;
+          this.store.finishRunNotice(job.id, 'submitted', this.clock(), null, response.messageId);
+        } catch (error) {
+          const state = sendFailureState(error);
+          noticeFailure = state === 'unknown'
+            ? '无新论文通知发送结果不确定，请先核对微信；需要重新查询可用 /arxiv now。'
+            : `无新论文通知发送失败：${publicError(error).replaceAll('/arxiv retry', '/arxiv now')}`;
+          this.store.finishRunNotice(job.id, state, this.clock(), noticeFailure);
+          throw error;
+        }
+        physicalSend = false;
+      }
       if (!this.store.sub(sub.key)) return;
       this.store.patchSub(sub.key, {last_complete: this.clock()}, this.clock());
-      const blocked = outstanding.filter(d => ['failed', 'unknown'].includes(d.status));
       finish('done', blocked.length ? `另有 ${blocked.length} 篇发送失败或结果不确定，请 /arxiv status 并按需 /arxiv retry。` : null);
-      // An empty unsent queue can mean all matches were already delivered.
-      // Keep empty days silent, but log enough to distinguish that from no matches.
       this.logger.info(`[arxiv-daily] Completed ${job.kind}; day=${window.day}; matched=${matched.length}; alreadySubmitted=${alreadySubmitted}; sent=${sent}/${total}; blocked=${blocked.length}.`);
     } catch (error) {
       let currentWindow = false;
@@ -219,8 +253,8 @@ export class DigestService {
       if (!currentWindow) finish('cancelled', '日期或电脑时区已变化或无法读取，停止旧日期任务。');
       else if (!physicalSend && job.attempts < 2 && !signal.aborted && this.allowed(this.store.sub(sub.key))) {
         this.store.reschedule(job, this.clock(), `${publicError(error)} 将在 ${(job.attempts + 1) * 15} 分钟后重试抓取/概括。`, sent, total);
-      } else finish('failed', publicError(error));
-      this.logger.warn(`[arxiv-daily] Digest ${job.kind} failed (${error?.name || 'Error'}): ${publicError(error)}`);
+      } else finish('failed', noticeFailure || publicError(error));
+      this.logger.warn(`[arxiv-daily] Digest ${job.kind} failed (${error?.name || 'Error'}): ${noticeFailure || publicError(error)}`);
     }
   }
 }
