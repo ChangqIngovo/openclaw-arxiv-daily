@@ -1,6 +1,6 @@
 import { parseTopics, topicKey } from './topics.js';
 import { subscriberKey } from './store.js';
-import { previousDayWindow } from './dates.js';
+import { previousDayWindow, localStamp } from './dates.js';
 import { isOwner } from './personal.js';
 import { effectiveTimeZone, timeZoneLabel } from './timezone.js';
 
@@ -15,7 +15,7 @@ export const HELP = [
   '/arxiv topics — 查看方向及 P1、P2…优先级；/arxiv priority 也可查看',
   '/arxiv lang zh — 读正文后中文概括；en 英文；none 只发英文 abstract',
   '/arxiv test — 按优先级试发前一个自然日新提交且尚未发过的 1 篇',
-  '/arxiv now — 现在处理前一个自然日新提交且尚未发过的论文',
+  '/arxiv now — 重新查询前一个自然日新提交且尚未发过的论文',
   '/arxiv status — 订阅、运行与发送状态',
   '/arxiv zotero — 绑定自己的 Zotero、选择文件夹及查看收藏状态',
   '/arxiv save arXiv编号 — 收藏已经收到的论文（需先绑定 Zotero）',
@@ -107,12 +107,16 @@ export function runCommand(content, who, service) {
   if (command === 'status') {
     const run = store.latestRun(who.key);
     const names = {queued: '等待处理', running: '处理中', done: '完成', failed: '失败', cancelled: '已取消'};
+    const kinds = {daily: '定时日报', now: '手动查询', test: '试发', retry: '发送重试'};
+    const stamp = ms => { const value = localStamp(ms, zone); return `${value.day} ${value.time}`; };
     const counts = Object.fromEntries(store.deliveryCounts(who.key).map(r => [r.status, r.n]));
     return [
       `订阅：${sub.active ? '启用' : '暂停'}\n方向优先级（P1 最高）：\n${priorityList(sub.topics)}`,
       `概括：${sub.language}；每日 ${config.sendTime} ${zoneLabel}`,
       `本次范围：${previousDayWindow(now, zone).day} 00:00–24:00（${zone}）首次提交的论文；不补历史。`,
-      `最近任务：${run ? names[run.status] || run.status : '未运行'}${run ? `；已提交 ${run.sent}/${run.total} 篇` : ''}`,
+      `最近任务：${run ? `${kinds[run.kind] || run.kind}；${names[run.status] || run.status}；已提交 ${run.sent}/${run.total} 篇` : '未运行'}`,
+      run ? `任务入队：${stamp(run.created)}；更新：${stamp(run.updated)}（${zone}）` : '',
+      run?.status === 'done' && !run.total && !run.error ? '本次没有待发论文；已发送的论文不会重复推送。' : '',
       `累计：已提交 ${counts.submitted || 0}，失败 ${counts.failed || 0}，不确定 ${counts.unknown || 0}`,
       run?.error ? `原因：${run.error}` : '',
       '“已提交”只表示微信接口接受，是否收到请以手机为准。',

@@ -170,10 +170,12 @@ export class DigestService {
         }
         finish('done'); return;
       }
-      await this.client.refresh(sub.topics, signal, window);
+      const refresh = await this.client.refresh(sub.topics, signal, window, {force: ['daily', 'now'].includes(job.kind)});
+      if (refresh) this.logger.info(`[arxiv-daily] Query ${job.kind}; day=${window.day}; zone=${window.timeZone}; fetched=${refresh.fetched}; cached=${refresh.cached}.`);
       if (!stillCurrent()) { finish('cancelled', '日期或电脑时区已变化，停止旧日期任务。'); return; }
-      let papers = rankPapers(this.store.papers(window.since, window.until)
-        .filter(p => !this.store.delivery(sub.key, p.id)), sub.topics);
+      const matched = rankPapers(this.store.papers(window.since, window.until), sub.topics);
+      const alreadySubmitted = matched.filter(({paper}) => this.store.delivery(sub.key, paper.id)?.status === 'submitted').length;
+      let papers = matched.filter(({paper}) => !this.store.delivery(sub.key, paper.id));
       const outstanding = this.store.unsubmitted(sub.key).filter(eligibleDelivery);
       const pending = outstanding.filter(d => d.status === 'pending');
       if (job.kind === 'test') papers = papers.slice(0, Math.max(0, 1 - pending.length));
@@ -208,8 +210,9 @@ export class DigestService {
       this.store.patchSub(sub.key, {last_complete: this.clock()}, this.clock());
       const blocked = outstanding.filter(d => ['failed', 'unknown'].includes(d.status));
       finish('done', blocked.length ? `另有 ${blocked.length} 篇发送失败或结果不确定，请 /arxiv status 并按需 /arxiv retry。` : null);
-      // Do not send an unsolicited empty-day message. Manual requests can inspect status.
-      if (!total) this.logger.info('[arxiv-daily] No new matching paper; no outbound message requested.');
+      // An empty unsent queue can mean all matches were already delivered.
+      // Keep empty days silent, but log enough to distinguish that from no matches.
+      this.logger.info(`[arxiv-daily] Completed ${job.kind}; day=${window.day}; matched=${matched.length}; alreadySubmitted=${alreadySubmitted}; sent=${sent}/${total}; blocked=${blocked.length}.`);
     } catch (error) {
       let currentWindow = false;
       try { currentWindow = stillCurrent(); } catch { /* Unreadable computer timezone: stop delivery. */ }

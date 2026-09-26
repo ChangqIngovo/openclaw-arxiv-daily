@@ -141,7 +141,7 @@ test('category-only and mixed daily retrieval retain first-submission boundaries
   assert.deepEqual(sent.map(msg=>/优先级：P(\d+)/.exec(msg.text)[1]),['1','2','3']);
   assert.match(sent[0].text,/匹配方向：21cm、astro-ph.CO、astro-ph.GA/);
   store.enqueue(sub.key,'now',now+1); await service.process(store.nextRun(now+1));
-  assert.equal(sent.length,3); assert.equal(queries,1);
+  assert.equal(sent.length,3); assert.equal(queries,2);
   assert.equal(store.delivery(sub.key,'2609.51004'),undefined); assert.equal(store.delivery(sub.key,'2609.51005'),undefined);
 });
 

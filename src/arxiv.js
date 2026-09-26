@@ -5,6 +5,7 @@ import { buildQuery, topicBatches } from './topics.js';
 import { inWindow, previousDayWindow } from './dates.js';
 
 export { DAY } from './dates.js';
+const QUERY_CACHE_TTL_MS = 15 * 60_000;
 const array = value => value == null ? [] : Array.isArray(value) ? value : [value];
 const text = value => typeof value === 'string' ? value : value?.['#text'] ?? '';
 const plain = value => text(value).replace(/\s+/g, ' ').trim();
@@ -50,13 +51,17 @@ export class ArxivClient {
     if (wait > 0) await this.sleep(wait, undefined, {signal});
     this.lastRequest = this.clock();
   }
-  async refresh(topics, signal, window = previousDayWindow(this.clock(), this.config.timeZone)) {
-    const now = this.clock();
+  async refresh(topics, signal, window = previousDayWindow(this.clock(), this.config.timeZone), {force = false} = {}) {
+    let fetched = 0, cached = 0;
     for (const batch of topicBatches(topics)) {
       // The API has inclusive minute precision. Recheck the exclusive end locally.
       const query = buildQuery(batch, window.since, window.until);
       const key = 'previous-day-query:' + createHash('sha256').update(query).digest('hex');
-      if (this.store.get(key)?.complete) continue;
+      const previous = this.store.get(key), now = this.clock();
+      // A date window is fixed, but papers can become searchable later. An early
+      // test must not freeze that window for the rest of the local day.
+      if (!force && previous?.complete && Number.isFinite(previous.at)
+          && previous.at <= now && now - previous.at < QUERY_CACHE_TTL_MS) { cached++; continue; }
       const collected = []; const uniqueIds = new Set(); let start = 0, total = 0;
       do {
         signal?.throwIfAborted();
@@ -64,7 +69,7 @@ export class ArxivClient {
         const url = new URL('https://export.arxiv.org/api/query');
         url.search = new URLSearchParams({ search_query: query, start: String(start), max_results: '100', sortBy: 'submittedDate', sortOrder: 'descending' }).toString();
         const requestSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(45_000)]) : AbortSignal.timeout(45_000);
-        const response = await this.fetchImpl(url, { signal: requestSignal, headers: { Accept: 'application/atom+xml', 'User-Agent': 'openclaw-arxiv-daily/0.5.3 (OpenClaw literature digest)' } });
+        const response = await this.fetchImpl(url, { signal: requestSignal, headers: { Accept: 'application/atom+xml', 'User-Agent': 'openclaw-arxiv-daily/0.5.4 (OpenClaw literature digest)' } });
         if (!response.ok) throw new Error(`arXiv HTTP ${response.status}，稍后用 /arxiv now 重试。`);
         const declared = Number(response.headers?.get('content-length') ?? 0);
         if (declared > 8_000_000) throw new Error('arXiv 响应过大。');
@@ -79,9 +84,12 @@ export class ArxivClient {
         start += page.papers.length;
       } while (start < total);
       const eligible = collected.filter(p => inWindow(p, window));
-      this.store.putPapers(eligible, now);
-      this.store.set(key, {complete: true, at: now, count: eligible.length});
+      const completedAt = this.clock();
+      this.store.putPapers(eligible, completedAt);
+      this.store.set(key, {complete: true, at: completedAt, count: eligible.length});
+      this.store.set('lastFetch', completedAt);
+      fetched++;
     }
-    this.store.set('lastFetch', this.clock());
+    return {fetched, cached};
   }
 }
